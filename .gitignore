@@ -1,2 +1,5 @@
 # ignore checkpoints
 .ipynb_checkpoints*.ipynb
+.ipynb_checkpoints/
+*.pt
+glove.6B/
