@@ -13,84 +13,78 @@ import sys
 
 class AnnotatedDataset(Dataset):
 
-    def __init__(self, tokenizer, df, unique_labels):
+    def __init__(self, df, unique_labels):
         self.df = df
         self.df["labels"] = self.df["labels"].apply(str.upper)  # fixing lowercase annotations...
         self.labels_to_ids = {k: v for v, k in enumerate(sorted(unique_labels))}
         self.ids_to_labels = {v: k for v, k in enumerate(sorted(unique_labels))}
-        self.tokenizer = tokenizer
+        self.align_labels()
 
-    def tokenize(self):
-        self.df["tokenized"] = self.df["sentences"].apply(self.tokenizer)
+    def __len__(self):
+        return len(self.df["aligned_labels"])
+        return self.df.size
+
+
+    def align_labels(self):
+
         self.df["word_ids"] = [token_text.word_ids() for token_text in self.df["tokenized"]]
-        #self.df[["word_ids", "labels"]].apply(self.align_label_example)
-        self.df[["word_ids", "labels"]]
-        self.df.apply(self.align_label_example(self.df["word_ids"], self.df["labels"]), axis=1)
-
-
-#TODO: Fix alignment
-    #def align_label_example(tokenized_input, labels):
-    def align_label_example(self, word_ids, labels):
+        word_ids = self.df["word_ids"].values.tolist()
+        word_labels = self.df["labels"].apply(str.split).values.tolist()
+        pre_alignment = list(zip(word_ids, word_labels))
     
-
-            # TODO: labels are self.df["labels"]
-            #print(row["word_ids"])
-    
-            previous_word_idx = None
+        aligned_labels = []
+        for word_idx, labels in pre_alignment:
+            previous_idx = None
             label_ids = []
-            print(word_ids)
-            print(labels)
-            raise SystemExit
-    
-            for word_idx in word_ids:
-                if word_idx is None:
+            for idx in word_idx:
+
+                if idx is None:
                     label_ids.append(-100)
-
-
                 
-                elif word_idx != previous_word_idx:
-                    #print(word_idx)  # returns whole array...
-                    #print(previous_word_idx)
-                    #x = self.df["labels"][word_idx]  # ERROR
-                    #print(x)
-                    #break
-                    continue
+                elif idx != previous_idx:
+                    try:
+                        label_ids.append(self.labels_to_ids[labels[idx]])
+                    except IndexError:
+                        #print("Word ids may have idx beyond the length of the labels")
+                        continue
 
                 else:
-                    pass
+                    label_ids.append(self.labels_to_ids[labels[idx]])
+                previous_idx = idx
+            aligned_labels.append(label_ids)
+            #test = self.df["tokenized"].iloc[0].input_ids
+            #print(self.tokenizer.convert_ids_to_tokens(test))
+        self.df["aligned_labels"] = aligned_labels
 
-                previous_word_idx = word_idx
-    
-            #    elif word_idx != previous_word_idx:
-            #        try:
-            #          label_ids.append(labels_to_ids[labels[word_idx]])
-            #        except:
-            #          label_ids.append(-100)
-    
-            #    else:
-            #        label_ids.append(labels_to_ids[labels[word_idx]] if label_all_tokens else -100)
-            #        label_ids.append(labels_to_ids[labels[word_idx]])
-            #    previous_word_idx = word_idx
-    
-    
-            #return label_ids
 
+def tokenizer(sents) -> BertTokenizerFast:
+    """
+    sents: list of str
+    """
+
+    tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
+    return [tokenizer(sent, padding="max_length", max_length=512, truncation=True,
+              return_tensors="pt") for sent in sents]
 
 def main(annotations_file):
+    """
+    opens file, tokenizes and finds unique labels before feeding data to main class
+    """
 
     with open(annotations_file, 'r') as concat_file:
             sents_labels = [line.strip() for line in concat_file]
     
     sents_labels = [sent_label.split("\t") for sent_label in sents_labels]
-    labels = [sent_label[1].split() for sent_label in sents_labels]
+    sents, labels = zip(*sents_labels)
+
+    labels = [label.split() for label in labels]
     unique_labels = set([l.upper() for label in labels for l in label])  # forcing uppercases due to errors
+
     annotated_df = pd.DataFrame(sents_labels, columns = ["sentences", "labels"])
-    tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
-    tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased", padding="max_length",
-                                                  max_length=512, truncation=True,
-                                                  return_tensors="pt")
-    annotations = AnnotatedDataset(tokenizer, annotated_df, unique_labels)
-    annotations.tokenize()
+    annotated_df["tokenized"] = tokenizer(sents)
+    annotations = AnnotatedDataset(annotated_df, unique_labels)
+
+
 
 if __name__ == "__main__":
     main(sys.argv[1])
