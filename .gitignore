@@ -3,3 +3,4 @@
 .ipynb_checkpoints/
 *.pt
 glove.6B/
+__pycache__
