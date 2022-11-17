@@ -26,67 +26,59 @@ def tokenizer(sents) -> BertTokenizerFast:
 
 class NERTrainer:
 
-    def __init__(self, loss=1000, acc=0, lr=0.01, model):
+    def __init__(self, model, loss=1000, acc=0, lr=0.01, train=False):
         self.best_loss = loss
         self.best_acc = acc
-        self.optimizer = optim.Adam(model.parameters(), lr=0.01)
-        self.model_tr = model
+        self.total_acc = 0
+        self.total_loss = 0
+        self.train = train
+        #self.total_acc_val = 0
+        #self.total_loss_val = 0
+        if self.train:
+            self.optimizer = optim.Adam(model.parameters(), lr=0.01)
+        self.model_tr = copy.deepcopy(model)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            self.model_tr = self.model_tr.cuda()
 
-    def trainer_loop(
+    def epoch_loop(self, epochs, train_data):
+        if torch.cuda.is_available():
+            self.model_tr = self.model_tr.cuda()
 
-def train(model, num_epochs, train_data, val_data):
-    """
+        for epoch in range(epochs):
+            if self.train:
+                self.model_tr.train()
+            else:
+                self.model_tr.eval()
+            self.total_acc = 0
+            self.total_loss = 0
+            self.train_val_loop(train_data)
 
-    """
+    def train_val_loop(self, train_data):  # may need to pass to DataSequence
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_tr = copy.deepcopy(model)
-    if torch.cuda.is_available():
-        model_tr = model_tr.cuda()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    best_acc = 0
-    best_loss = 1000
+        for data, label in train_data:
+            label = label.to(self.device)
+            mask = data["attention_mask"].squeeze(1).to(self.device)  # eliminating dims of size 1
+            input_id = data['input_ids'].squeeze(1).to(self.device)
+            if self.train:
+                self.optimizer.zero_grad()  # figure out what this is doing
+            loss, logits = self.model_tr(input_id, mask, label)
+            self.clean_logits(logits, label, loss)  # we need the acc value from here
+            loss.backward()
+            if self.train:
+                self.optimizer.step()  # figure out what this is doing
 
-    for epoch in range(num_epochs):  # change to tqdm
-        model_tr.train()
+        self.total_acc = self_total_acc / len(train_data)
 
-        acc_train = 0
-        loss_train = 0
-        acc_val = 0
-        loss_val = 0
+    def clean_logits(self, logits, label, loss):
 
-        #for train_data, train_label in tqdm(train_data):
-        train_val_loop(model_tr, train_data, acc_train, loss_train, optimizer, train=True)
-        model_tr.eval()
-        train_val_loop(model_tr, val_data, acc_val, loss_val, optimizer)  # we don't need opt fix logic
-def train_val_loop(mode, train_data, acc, loss, optimizer, train=False):
-    
-    for data, label in train_data:  # can change to tqdm
+        for i in range(logits.shape[0]):
+            logits_clean = logits[i][label[i] != -100]
+            label_clean = label[i][label[i] != -100]
 
-        label = label.to(device)
-        mask = data["attention_mask"].squeeze(1).to(device)  # eliminating dims of size 1
-        input_id = data['input_ids'].squeeze(1).to(device)
-        if train:
-            optimizer.zero_grad()  # figure out what this is doing
-        loss, logits = model(input_id, mask, label)
-        clean_logits(logits, label, acc, loss)  # we need the acc value from here
-        loss.backward()
-        optimizer.step()
-    accuracy = acc / len(train_data)
-    loss = loss / len(train_data)
-    return accuracy, loss
-
-def clean_logits(logits, label, acc, loss):
-    # may need to change repeated words labels to -100...
-
-    for i in range(logits.shape[0]):
-
-        logits_clean = logits[i][label[i] != -100]
-        label_clean = label[i][label[i] != -100]
-
-        preds = logits_clean.argmax(dim=1)
-        acc += (predictions == label_clean).float().mean()
-        loss += loss.item()
+            preds = logits_clean.argmax(dim=1)
+            self.total_acc += (predictions == label_clean).float().mean()
+            self.total_loss += loss.item()
 
 def train_loop(model, df_train, df_val):
     #outdated
