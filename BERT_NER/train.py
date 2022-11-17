@@ -122,8 +122,8 @@ def main(annotation_files):
 
     for sentence, labels in valid_dataset:
         valid_set.add(labels.shape)
-    print(train_set)
-    print(valid_set)
+    #print(train_set)
+    #print(valid_set)
     raise SystemExit
     train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=False)
     valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=False)

@@ -45,5 +45,7 @@ class AnnotatedDataset(Dataset):
                 else:
                     label_ids.append(self.labels_to_ids[labels[idx]])
                 previous_idx = idx
+            assert len(label_ids) == 512, "alignment failing, len should be 512"
+
             aligned_labels.append(label_ids)
         return aligned_labels
