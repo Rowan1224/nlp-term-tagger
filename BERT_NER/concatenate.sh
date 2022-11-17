@@ -13,4 +13,4 @@ test_sents="../Dataset/test/sentences.txt"
 test_labels="../Dataset/test/labels.txt"
 #echo $train_sents
 #python data_exploration.py <(paste $1 $2)
-python data_exploration.py <(paste $train_sents $train_labels) <(paste $valid_sents $valid_labels)
+python train.py <(paste $train_sents $train_labels) <(paste $valid_sents $valid_labels)
