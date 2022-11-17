@@ -66,9 +66,6 @@ class NERTrainer:
             input_id = data['input_ids'].squeeze(1).to(self.device)
             if self.train:
                 self.optimizer.zero_grad()
-            print(f"input shape: {input_id.shape}")
-            print(f"mask shape: {mask.shape}")
-            print(f"label shape: {label.shape}")
             loss, logits = self.model_tr(input_id, mask, label)
             self.clean_logits(logits, label, loss)
             loss.backward()
@@ -115,28 +112,8 @@ def main(annotation_files):
     train_dataset = create_raw_data(annotation_files[0])  # algined_labels_760
     valid_dataset = create_raw_data(annotation_files[1])  # 77
 
-    train_set = set()
-    valid_set = set()
-    for sentence, labels in train_dataset:
-        train_set.add(labels.shape)
-
-    for sentence, labels in valid_dataset:
-        valid_set.add(labels.shape)
-    #print(train_set)
-    #print(valid_set)
-    raise SystemExit
     train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=False)
     valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=False)
-    #for sent, label in train_dataloader:
-    #    if sent["input_ids"].squeeze(1).shape[0] != 8 or sent["input_ids"].squeeze(1).shape[1] != 512:
-    #        print("input ids failed")
-    #        print(sent["input_ids"].squeeze(1).shape)
-    #    if sent["attention_mask"].squeeze(1).shape[0] != 8 or sent["attention_mask"].squeeze(1).shape[1] != 512:
-    #        print("attention mask failed")
-    #        print(sent["attention_mask"].squeeze(1).shape)
-    #    if label.shape[0] != 8 or label.shape[1] != 512:
-    #        print("labels failed")
-    #        print(label.shape)
 
     model = BertModel(unique_labels)  # warning message, needs to fine tune!
     trainer = NERTrainer(model, True)

@@ -40,7 +40,7 @@ class AnnotatedDataset(Dataset):
                     try:
                         label_ids.append(self.labels_to_ids[labels[idx]])
                     except IndexError:
-                        #print("Word ids may have idx beyond the length of the labels")
+                        label_ids.append(-100)
                         continue
                 else:
                     label_ids.append(self.labels_to_ids[labels[idx]])
