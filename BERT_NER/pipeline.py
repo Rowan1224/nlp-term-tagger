@@ -24,7 +24,6 @@ class AnnotatedDataset(Dataset):
         return torch.LongTensor(self.aligned_labels[idx])
 
     def align_labels(self):
-
         word_ids = [token_text.word_ids() for token_text in self.tokenized]
         pre_alignment = list(zip(word_ids, self.labels))
     
