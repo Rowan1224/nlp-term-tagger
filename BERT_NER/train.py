@@ -72,8 +72,8 @@ class NERTrainer:
             if self.train:
                 self.optimizer.step()
 
-        epoch_acc = self_total_acc / len(train_data)
-        epoch_loss = self_total_loss / len(train_data)
+        epoch_acc = self.total_acc / len(train_data)
+        epoch_loss = self.total_loss / len(train_data)
         return epoch_acc, epoch_loss
 
     def clean_logits(self, logits, label, loss):
