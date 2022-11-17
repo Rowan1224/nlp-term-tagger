@@ -23,19 +23,19 @@ class DistilbertNER(nn.Module):
     tokens_dim : int specifyng the dimension of the classifier
   """
 
-  def __init__(self, tokens_dim):
+  def __init__(self, unique_labels):
     super(DistilbertNER,self).__init__()
 
-    if type(tokens_dim) != int:
-            raise TypeError('Please tokens_dim should be an integer')
+    #if type(tokens_dim) != int:
+    #        raise TypeError('Please tokens_dim should be an integer')
 
-    if tokens_dim <= 0:
-          raise ValueError('Classification layer dimension should be at least 1')
+    #if tokens_dim <= 0:
+    #      raise ValueError('Classification layer dimension should be at least 1')
 
-    self.pretrained = DistilBertForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels = tokens_dim) #set the output of each token classifier = unique_lables
+    self.pretrained = DistilBertForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=len(unique_labels)) #set the output of each token classifier = unique_lables
 
 
-  def forward(self, input_ids, attention_mask, labels = None): #labels are needed in order to compute the loss
+  def forward(self, input_ids, attention_mask, labels=None): #labels are needed in order to compute the loss
     """
   Forwad computation of the network
   Input:
@@ -46,8 +46,8 @@ class DistilbertNER(nn.Module):
 
     #inference time no labels
     if labels == None:
-      out = self.pretrained(input_ids = input_ids, attention_mask = attention_mask )
+      out = self.pretrained(input_ids=input_ids, attention_mask=attention_mask, return_dict=False)
       return out
 
-    out = self.pretrained(input_ids = input_ids, attention_mask = attention_mask , labels = labels)
+    out = self.pretrained(input_ids=input_ids, attention_mask=attention_mask, labels=labels, return_dict=False)
     return out

@@ -37,16 +37,16 @@ class NERTrainer:
         if self.train:
             self.optimizer = optim.Adam(model.parameters(), lr=0.01)
         self.model_tr = copy.deepcopy(model)
-        # self.device = torch.device("cpu")
+        self.device = torch.device("cpu")
         # if we have gpu
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if torch.cuda.is_available():
-           self.model_tr = self.model_tr.cuda()
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #if torch.cuda.is_available():
+        #    self.model_tr = self.model_tr.cuda()
 
     def epoch_loop(self, epochs, train_data):
         # my laptop sucks
-        if torch.cuda.is_available():
-           self.model_tr = self.model_tr.cuda()
+        #if torch.cuda.is_available():
+        #    self.model_tr = self.model_tr.cuda()
 
         for epoch in range(epochs):
             if self.train:
@@ -115,6 +115,7 @@ def main(annotation_files):
     train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=False)
     valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=False)
 
+    #model = BertModel(unique_labels)  # warning message, needs to fine tune!
     model = DistilbertNER(unique_labels)  # warning message, needs to fine tune!
     trainer = NERTrainer(model, True)
     trainer.epoch_loop(8, train_dataloader)
