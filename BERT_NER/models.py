@@ -1,4 +1,4 @@
-from transformers import BertForTokenClassification
+from transformers import BertForTokenClassification, DistilBertForTokenClassification
 import torch.nn as nn
 
 class BertModel(nn.Module):
