@@ -1,4 +1,4 @@
-from transformers import BertForTokenClassification, DistilBertForTokenClassification
+from transformers import BertForTokenClassification, DistilBertForTokenClassification, BertTokenizerFast, DistilBertTokenizer
 import torch.nn as nn
 
 class BertModel(nn.Module):
@@ -7,7 +7,8 @@ class BertModel(nn.Module):
 
         super(BertModel, self).__init__()
 
-        self.bert = BertForTokenClassification.from_pretrained('bert-base-cased', num_labels=len(unique_labels))
+        self.bert = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=len(unique_labels))
+        self.tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
 
     def forward(self, input_id, mask, label):
 
@@ -24,7 +25,7 @@ class DistilbertNER(nn.Module):
   """
 
   def __init__(self, unique_labels):
-    super(DistilbertNER,self).__init__()
+    super(DistilbertNER, self).__init__()
 
     #if type(tokens_dim) != int:
     #        raise TypeError('Please tokens_dim should be an integer')
@@ -33,6 +34,7 @@ class DistilbertNER(nn.Module):
     #      raise ValueError('Classification layer dimension should be at least 1')
 
     self.pretrained = DistilBertForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=len(unique_labels)) #set the output of each token classifier = unique_lables
+    self.tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 
 
   def forward(self, input_ids, attention_mask, labels=None): #labels are needed in order to compute the loss
