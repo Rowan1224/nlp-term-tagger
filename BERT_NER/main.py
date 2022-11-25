@@ -17,6 +17,8 @@ def main(annotation_files, type_model):
     unique_labels, train_sents, train_labels = create_raw_data(annotation_files[0])  # algined_labels_760
     _, valid_sents, valid_labels = create_raw_data(annotation_files[1])  # ignore unique labels from val, they are both the same
     _, test_sents, test_labels = create_raw_data(annotation_files[2])  # ignore unique labels from val, they are both the same
+    labels_to_ids = {k: v for v, k in enumerate(sorted(unique_labels))}
+    ids_to_labels = {v: k for v, k in enumerate(sorted(unique_labels))}                
     if type_model == "bert":
         model = BertModel(unique_labels)
     else:
@@ -25,9 +27,9 @@ def main(annotation_files, type_model):
     #model = models[type_model]  # warning message, needs to fine tune! 
     chosen_tokenizer = model.tokenizer
 
-    train_dataset = AnnotatedDataset(train_labels, train_sents, unique_labels, tokenizer=chosen_tokenizer)
-    valid_dataset = AnnotatedDataset(valid_labels, valid_sents, unique_labels, tokenizer=chosen_tokenizer)    
-    test_dataset = AnnotatedDataset(test_labels, test_sents, unique_labels, tokenizer=chosen_tokenizer)    
+    train_dataset = AnnotatedDataset(train_labels, train_sents, labels_to_ids, tokenizer=chosen_tokenizer)
+    valid_dataset = AnnotatedDataset(valid_labels, valid_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
+    test_dataset = AnnotatedDataset(test_labels, test_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
 
 
     train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
@@ -41,8 +43,8 @@ def main(annotation_files, type_model):
     print('\n'+"-"*10+"Evaluation"+"-"*10)
     evaluation = NEREvaluation(trained_model, train=False)
     evaluation.epoch_loop(1, test_dataloader)
-    pred_labels = evaluation.preds_viz
-    true_labels = evaluation.labels_viz
+    pred_labels = [ids_to_labels[pred] for pred in evaluation.preds_viz]
+    true_labels = [ids_to_labels[pred] for pred in evaluation.labels_viz]
     report = classification_report(pred_labels, true_labels)
     print(report)
     # span based analysis
