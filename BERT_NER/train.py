@@ -40,25 +40,26 @@ class NERTrainer:
             self.model_tr.train()
 
         for epoch in range(epochs):
-
-            self.total_acc = 0
-            self.total_loss = 0
+ 
             self.train = True
             epoch_acc, epoch_loss = self.train_val_loop(train_data)
-            print(f"Train Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
+            print(f"Train Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")            
+
             self.train = False
             self.model_tr.eval()
-            epoch_acc, epoch_loss = self.train_val_loop(train_data)
+            epoch_acc, epoch_loss = self.train_val_loop(val_data)
             print(f"Val Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
 
         return self.model_tr
 
     def train_val_loop(self, train_data):  # may need to pass to DataSequence
+        self.total_acc = 0
+        self.total_loss = 0
 
         for data, label in train_data:
             
             label = label.to(self.device)
-            mask = data["attention_mask"].to(self.device)  # eliminating dims of size 1
+            mask = data["attention_mask"].to(self.device) 
             input_id = data['input_ids'].to(self.device)
 
             if self.train:
@@ -83,7 +84,6 @@ class NERTrainer:
         batch_size = logits.shape[0]
 
         for i in range(batch_size):
-
             
 
             mask = label[i] != -100
@@ -96,6 +96,27 @@ class NERTrainer:
 
         self.total_loss += loss.item()
 
+
+class NEREvaluation(NERTrainer):
+
+    def __init__(self, model, train=False):
+        self.total_acc = 0
+        self.total_loss = 0
+        self.model = model
+        self.train = train  # attr for train_val method
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def epoch_loop(self, epochs, eval_data):
+
+        self.model.to(self.device)
+
+        for epoch in range(epochs):
+ 
+            self.model.eval()
+            epoch_acc, epoch_loss = self.train_val_loop(eval_data)
+            print(f"Eval Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
+
+        return None
 
 def create_raw_data(annotations_file):
 
@@ -122,6 +143,7 @@ def main(annotation_files, type_model):
     #annotation_files = annotation_files[1:]  # ignoring python script
     unique_labels, train_sents, train_labels = create_raw_data(annotation_files[0])  # algined_labels_760
     _, valid_sents, valid_labels = create_raw_data(annotation_files[1])  # ignore unique labels from val, they are both the same
+    _, test_sents, test_labels = create_raw_data(annotation_files[2])  # ignore unique labels from val, they are both the same
     if type_model == "bert":
         model = BertModel(unique_labels)
     else:
@@ -132,18 +154,20 @@ def main(annotation_files, type_model):
 
     train_dataset = AnnotatedDataset(train_labels, train_sents, unique_labels, tokenizer=chosen_tokenizer)
     valid_dataset = AnnotatedDataset(valid_labels, valid_sents, unique_labels, tokenizer=chosen_tokenizer)    
+    test_dataset = AnnotatedDataset(test_labels, test_sents, unique_labels, tokenizer=chosen_tokenizer)    
 
 
     train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
     valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True)
     
     
     trainer = NERTrainer(model.pretrained, train=True)
-    trained_model = trainer.epoch_loop(3, train_dataloader, valid_dataloader)
+    trained_model = trainer.epoch_loop(2, train_dataloader, valid_dataloader)
 
-    #print("#"*10+"Validation"+"#"*10)
-    #validation = NERTrainer(trained_model, train=False)
-    #validation.epoch_loop(1, valid_dataloader)
+    print("#"*10+"Evaluation"+"#"*10)
+    evaluation = NEREvaluation(trained_model, train=False)
+    evaluation.epoch_loop(1, test_dataloader)
 
 if __name__ == "__main__":
     main(sys.argv[1:], "distilbert")
