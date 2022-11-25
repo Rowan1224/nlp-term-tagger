@@ -5,3 +5,4 @@
 glove.6B/
 __pycache__
 *.py.swp
+*csv
