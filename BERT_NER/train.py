@@ -75,12 +75,8 @@ class NERTrainer:
                 loss.backward()
                 self.optimizer.step()
 
-            
-
             self.clean_logits(logits, label, loss)
             
-   
-
         epoch_acc = self.total_acc / (len(train_data))
         epoch_loss = self.total_loss / len(train_data)
         return epoch_acc, epoch_loss
@@ -128,7 +124,7 @@ def main(annotation_files, type_model):
 
     #annotation_files = annotation_files[1:]  # ignoring python script
     unique_labels, train_sents, train_labels = create_raw_data(annotation_files[0])  # algined_labels_760
-    _, valid_sents, valid_labels = create_raw_data(annotation_files[1])
+    _, valid_sents, valid_labels = create_raw_data(annotation_files[1])  # ignore unique labels from val, they are both the same
     if type_model == "bert":
         model = BertModel(unique_labels)
     else:
