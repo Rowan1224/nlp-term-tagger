@@ -13,6 +13,7 @@ import torch
 import copy
 from torch.utils.data import DataLoader, random_split, Subset
 import sys
+from sklearn.metrics import classification_report
 import tqdm
 
 
@@ -23,9 +24,9 @@ class NERTrainer:
         self.total_acc = 0
         self.total_loss = 0
         self.train = train
-        self.model_tr = copy.deepcopy(model)
+        self.model = copy.deepcopy(model)
         if self.train:
-            self.optimizer = optim.Adam(params=self.model_tr.parameters(), lr=lr)
+            self.optimizer = optim.Adam(params=self.model.parameters(), lr=lr)
 
         # self.device = torch.device("cpu")
         # if we have gpu
@@ -34,10 +35,10 @@ class NERTrainer:
 
     def epoch_loop(self, epochs, train_data, val_data):
 
-        self.model_tr.to(self.device)
+        self.model.to(self.device)
 
         if self.train:
-            self.model_tr.train()
+            self.model.train()
 
         for epoch in range(epochs):
  
@@ -46,11 +47,11 @@ class NERTrainer:
             print(f"Train Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")            
 
             self.train = False
-            self.model_tr.eval()
+            self.model.eval()
             epoch_acc, epoch_loss = self.train_val_loop(val_data)
             print(f"Val Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
 
-        return self.model_tr
+        return self.model
 
     def train_val_loop(self, train_data):  # may need to pass to DataSequence
         self.total_acc = 0
@@ -64,12 +65,12 @@ class NERTrainer:
 
             if self.train:
                 self.optimizer.zero_grad()
-            loss, logits = self.model_tr(input_ids=input_id, attention_mask=mask, labels= label, return_dict=False)
+            loss, logits = self.model(input_ids=input_id, attention_mask=mask, labels= label, return_dict=False)
 
 
 
             if self.train:
-                torch.nn.utils.clip_grad_norm_(parameters=self.model_tr.parameters(), max_norm=10)
+                torch.nn.utils.clip_grad_norm_(parameters=self.model.parameters(), max_norm=10)
                 loss.backward()
                 self.optimizer.step()
 
@@ -82,7 +83,6 @@ class NERTrainer:
     def clean_logits(self, logits, label, loss):
 
         batch_size = logits.shape[0]
-
         for i in range(batch_size):
             
 
@@ -102,6 +102,8 @@ class NEREvaluation(NERTrainer):
     def __init__(self, model, train=False):
         self.total_acc = 0
         self.total_loss = 0
+        self.preds_viz = []
+        self.labels_viz = []
         self.model = model
         self.train = train  # attr for train_val method
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -118,6 +120,19 @@ class NEREvaluation(NERTrainer):
 
         return None
 
+    def clean_logits(self, logits, label, loss):
+
+        batch_size = logits.shape[0]
+        for i in range(batch_size):
+            mask = label[i] != -100
+            label_clean = torch.masked_select(label[i], mask)
+            preds = torch.masked_select(logits[i].argmax(dim=1), mask)
+            self.total_acc += (preds == label_clean).float().mean()/batch_size
+            self.preds_viz.extend(preds.cpu().numpy())
+            self.labels_viz.extend(label_clean.cpu().numpy())
+
+        self.total_loss += loss.item()
+
 def create_raw_data(annotations_file):
 
     with open(annotations_file, 'r') as concat_file:
@@ -131,6 +146,7 @@ def create_raw_data(annotations_file):
     
     unique_labels = set([l.upper() for label in labels for l in label])  # forcing uppercases due to errors
     return unique_labels, sents, labels
+
 
     
 
@@ -163,11 +179,16 @@ def main(annotation_files, type_model):
     
     
     trainer = NERTrainer(model.pretrained, train=True)
-    trained_model = trainer.epoch_loop(2, train_dataloader, valid_dataloader)
+    trained_model = trainer.epoch_loop(5, train_dataloader, valid_dataloader)
 
-    print("#"*10+"Evaluation"+"#"*10)
+    print('\n'+"-"*10+"Evaluation"+"-"*10)
     evaluation = NEREvaluation(trained_model, train=False)
-    evaluation.epoch_loop(1, test_dataloader)
+    evaluation.epoch_loop(5, test_dataloader)
+    pred_labels = evaluation.preds_viz
+    true_labels = evaluation.labels_viz
+    report = classification_report(pred_labels, true_labels)
+    print(report)
+    # span based analysis
 
 if __name__ == "__main__":
     main(sys.argv[1:], "distilbert")
