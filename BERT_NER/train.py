@@ -23,13 +23,7 @@ class NERTrainer:
         self.total_acc = 0
         self.total_loss = 0
         self.train = train
-        #self.total_acc_val = 0
-        #self.total_loss_val = 0
-        # print(self.train)
-  
         self.model_tr = copy.deepcopy(model)
-
-
         if self.train:
             self.optimizer = optim.Adam(params=self.model_tr.parameters(), lr=lr)
 
@@ -38,21 +32,24 @@ class NERTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-    def epoch_loop(self, epochs, train_data):
+    def epoch_loop(self, epochs, train_data, val_data):
 
         self.model_tr.to(self.device)
 
         if self.train:
             self.model_tr.train()
-        else:
-            self.model_tr.eval()
 
         for epoch in range(epochs):
 
             self.total_acc = 0
             self.total_loss = 0
+            self.train = True
             epoch_acc, epoch_loss = self.train_val_loop(train_data)
-            print(f"Epoch {epoch:.3f} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
+            print(f"Train Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
+            self.train = False
+            self.model_tr.eval()
+            epoch_acc, epoch_loss = self.train_val_loop(train_data)
+            print(f"Val Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
 
         return self.model_tr
 
@@ -142,11 +139,11 @@ def main(annotation_files, type_model):
     
     
     trainer = NERTrainer(model.pretrained, train=True)
-    trained_model = trainer.epoch_loop(3, train_dataloader)
+    trained_model = trainer.epoch_loop(3, train_dataloader, valid_dataloader)
 
-    print("#"*10+"Validation"+"#"*10)
-    validation = NERTrainer(trained_model, train=False)
-    validation.epoch_loop(1, valid_dataloader)
+    #print("#"*10+"Validation"+"#"*10)
+    #validation = NERTrainer(trained_model, train=False)
+    #validation.epoch_loop(1, valid_dataloader)
 
 if __name__ == "__main__":
     main(sys.argv[1:], "distilbert")
