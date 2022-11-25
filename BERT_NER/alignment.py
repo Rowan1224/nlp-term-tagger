@@ -4,13 +4,12 @@ import torch
 
 class AnnotatedDataset(Dataset):
 
-    def __init__(self, labels, sents, unique_labels, tokenizer):
+    def __init__(self, labels, sents, labels_to_ids, tokenizer):
         self.tokenizer = tokenizer
         self.labels = [[lab.upper() for lab in label] for label in labels]
         self.tokenized = [self.tokenizer(sent, is_split_into_words=True, padding="max_length", max_length=128, truncation=True,
                           return_offsets_mapping=True) for sent in sents]
-        self.labels_to_ids = {k: v for v, k in enumerate(sorted(unique_labels))}
-        self.ids_to_labels = {v: k for v, k in enumerate(sorted(unique_labels))}                
+        self.labels_to_ids = labels_to_ids
         self.aligned_labels = self.align_labels()
 
     def __len__(self):
