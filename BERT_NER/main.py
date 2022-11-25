@@ -1,10 +1,3 @@
-# sources
-# https://towardsdatascience.com/named-entity-recognition-with-bert-in-pytorch-a454405e0b6a
-# https://pythonawesome.com/pytorch-named-entity-recognition-with-bert/ 
-## with pyspark but y?
-# https://sparkbyexamples.com/pyspark-tutorial/
-# https://github.com/kamalkraj/BERT-NER
-# https://towardsdatascience.com/custom-named-entity-recognition-with-bert-cf1fd4510804
 from alignment import AnnotatedDataset
 from models import BertModel, DistilbertNER
 from train_eval import NERTrainer, NEREvaluation, create_raw_data
@@ -56,15 +49,3 @@ def main(annotation_files, type_model):
 
 if __name__ == "__main__":
     main(sys.argv[1:], "distilbert")
-
-# BERT Example
-# https://huggingface.co/dslim/bert-base-NER?text=My+name+is+Wolfgang+and+I+live+in+Berlin
-#tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
-#model = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
-#
-#nlp = pipeline("ner", model=model, tokenizer=tokenizer)
-#example = "My name is Wolfgang and I live in Berlin"
-#
-#ner_results = nlp(example)
-#print(ner_results)
-# source for pipes https://stackoverflow.com/questions/11109859/pipe-output-from-shell-command-to-a-python-script
