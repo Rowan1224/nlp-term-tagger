@@ -2,7 +2,9 @@ from alignment import AnnotatedDataset
 from models import BertModel, DistilbertNER
 from train_eval import NERTrainer, NEREvaluation, create_raw_data
 from torch.utils.data import DataLoader
+#from deeper_ner_eval import compute_metrics
 import sys
+import pandas as pd
 from sklearn.metrics import classification_report
 import tqdm
 
@@ -13,7 +15,6 @@ def main(annotation_files, type_model):
     """
 
 
-    #annotation_files = annotation_files[1:]  # ignoring python script
     unique_labels, train_sents, train_labels = create_raw_data(annotation_files[0])  # algined_labels_760
     _, valid_sents, valid_labels = create_raw_data(annotation_files[1])  # ignore unique labels from val, they are both the same
     _, test_sents, test_labels = create_raw_data(annotation_files[2])  # ignore unique labels from val, they are both the same
@@ -40,13 +41,34 @@ def main(annotation_files, type_model):
     trainer = NERTrainer(model.pretrained, train=True)
     trained_model = trainer.epoch_loop(4, train_dataloader, valid_dataloader)  # seems to overfit after epoch 3
 
-    print('\n'+"-"*10+"Evaluation"+"-"*10)
+    print('\n'+"-"*10+"Token Evaluation"+"-"*10)
     evaluation = NEREvaluation(trained_model, train=False)
     evaluation.epoch_loop(1, test_dataloader)
-    pred_labels = [ids_to_labels[pred] for pred in evaluation.preds_viz]
-    true_labels = [ids_to_labels[pred] for pred in evaluation.labels_viz]
-    report = classification_report(pred_labels, true_labels)
+
+    #for pred_sent in evaluation.preds_sents:
+    #    for pred in pred_sent:
+    #        print(pred)
+    
+    #pred_token_labels = [ids_to_labels[pred] for pred_sent in evaluation.preds_sents for pred in pred_sent]  # weird flattening
+    pred_sent_labels = [[ids_to_labels[pred] for pred in pred_sent] for pred_sent in evaluation.pred_sents]
+    true_sent_labels = [[ids_to_labels[true] for true in true_sent] for true_sent in evaluation.label_sents]
+    pred_tokens = [tok for sent in pred_sent_labels for tok in sent]
+    true_tokens = [tok for sent in true_sent_labels for tok in sent]
+    
+
+    pred_sent_labels = [' '.join(pred_sent) for pred_sent in pred_sent_labels]
+    true_sent_labels = [' '.join(true_sent) for true_sent in true_sent_labels]
+
+    storing_data = {"ground_truths_gold": true_sent_labels, "predictions": pred_sent_labels}
+    df = pd.DataFrame(storing_data)
+    df.to_csv("./bert_results.csv", header=True, index=False)
+    report = classification_report(pred_tokens, true_tokens)
     print(report)
+
+    # in-progress, this was stolen
+    print('\n'+"-"*10+"Span Evaluation"+"-"*10)
+    # test_labels  # sentences
+    #compute_metrics(pred_labels, true_labels, unique_labels)
     # span based analysis
 
 if __name__ == "__main__":
