@@ -112,8 +112,6 @@ class NEREvaluation(NERTrainer):
             label_clean = torch.masked_select(label[i], mask)
             preds = torch.masked_select(logits[i].argmax(dim=1), mask)
             self.total_acc += (preds == label_clean).float().mean()/batch_size
-            #self.preds_viz.extend(preds.cpu().numpy())
-            #self.labels_viz.extend(label_clean.cpu().numpy())
             self.pred_sents.append(preds.cpu().numpy())
             self.label_sents.append(label_clean.cpu().numpy())
 

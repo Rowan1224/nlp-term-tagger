@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import sys
 import pandas as pd
 from sklearn.metrics import classification_report
-import tqdm
+#import tqdm
 
 
 def main(annotation_files, type_model):
@@ -45,19 +45,10 @@ def main(annotation_files, type_model):
     evaluation = NEREvaluation(trained_model, train=False)
     evaluation.epoch_loop(1, test_dataloader)
 
-    #for pred_sent in evaluation.preds_sents:
-    #    for pred in pred_sent:
-    #        print(pred)
-    
-    #pred_token_labels = [ids_to_labels[pred] for pred_sent in evaluation.preds_sents for pred in pred_sent]  # weird flattening
-    pred_sent_labels = [[ids_to_labels[pred] for pred in pred_sent] for pred_sent in evaluation.pred_sents]
-    true_sent_labels = [[ids_to_labels[true] for true in true_sent] for true_sent in evaluation.label_sents]
-    pred_tokens = [tok for sent in pred_sent_labels for tok in sent]
-    true_tokens = [tok for sent in true_sent_labels for tok in sent]
-    
-
-    pred_sent_labels = [' '.join(pred_sent) for pred_sent in pred_sent_labels]
-    true_sent_labels = [' '.join(true_sent) for true_sent in true_sent_labels]
+    pred_sent_labels = [' '.join([ids_to_labels[pred] for pred in pred_sent]) for pred_sent in evaluation.pred_sents]
+    true_sent_labels = [' '.join([ids_to_labels[true] for true in true_sent]) for true_sent in evaluation.label_sents]
+    pred_tokens = [tok for sent in pred_sent_labels for tok in sent.split(' ')]
+    true_tokens = [tok for sent in true_sent_labels for tok in sent.split(' ')]
 
     storing_data = {"ground_truths_gold": true_sent_labels, "predictions": pred_sent_labels}
     df = pd.DataFrame(storing_data)
@@ -65,11 +56,8 @@ def main(annotation_files, type_model):
     report = classification_report(pred_tokens, true_tokens)
     print(report)
 
-    # in-progress, this was stolen
     print('\n'+"-"*10+"Span Evaluation"+"-"*10)
-    # test_labels  # sentences
     #compute_metrics(pred_labels, true_labels, unique_labels)
-    # span based analysis
 
 if __name__ == "__main__":
     main(sys.argv[1:], "distilbert")
