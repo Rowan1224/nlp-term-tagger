@@ -24,8 +24,7 @@ def main(annotation_files, type_model):
         model = BertModel(unique_labels)
     else:
         model = DistilbertNER(unique_labels)
-    #models = {"bert": BertModel(unique_labels), "distilbert": DistilbertNER(unique_labels)}        
-    #model = models[type_model]  # warning message, needs to fine tune! 
+
     chosen_tokenizer = model.tokenizer
 
     train_dataset = AnnotatedDataset(train_labels, train_sents, labels_to_ids, tokenizer=chosen_tokenizer)
