@@ -40,9 +40,20 @@ def main(annotation_files, type_model):
         crf_valid_sents = [' '.join(sent) for sent in valid_sents]
         crf_train_labels = [' '.join(labels) for labels in train_labels]
         crf_valid_labels = [' '.join(labels) for labels in valid_labels]
+        crf_test_sents = [' '.join(sent) for sent in test_sents]
+        crf_test_labels = [' '.join(labels) for labels in test_labels]
 
-        crf_train_dict = {"sentences": crf_train_sents, "labels": crf_train_labels}
+        crf_train_dict = {"sentences": crf_train_sents, "labels": crf_train_labels}  # sent in semeval instead of sentences
         crf_val_dict = {"sentences": crf_valid_sents, "labels": crf_valid_labels}
+        crf_test_dict = {"sentences": crf_test_sents, "labels": crf_test_labels}
+        # to store them to run crf from semeval 2023
+        #crf_train_df = pd.DataFrame.from_dict(crf_train_dict)
+        #crf_val_df = pd.DataFrame.from_dict(crf_val_dict)
+        #crf_test_df = pd.DataFrame.from_dict(crf_test_dict)
+        #crf_train_df.to_csv("distilbert_train.csv", index=False)
+        #crf_val_df.to_csv("distilbert_val.csv", index=False)
+        #crf_test_df.to_csv("distilbert_test.csv", index=False)
+
         crf_train_set = Dataset.from_dict(crf_train_dict)
         crf_val_set = Dataset.from_dict(crf_val_dict)
         #print(crf_train_set[4]["sentences"])
@@ -50,7 +61,7 @@ def main(annotation_files, type_model):
         train_crf = CustomTrainer(model, crf_train_set, crf_val_set, labels_to_ids)
         train_crf.model_trainer(output_path)
 
-        raise SystemExit
+        raise SystemExit  # testing stuff
     elif type_model == "distilbert":
         model = DistilbertNER(unique_labels)
 
@@ -87,6 +98,6 @@ def main(annotation_files, type_model):
     #compute_metrics(pred_labels, true_labels, unique_labels)
 
 if __name__ == "__main__":
-    main(sys.argv[1:], "distilbert")
-    #main(sys.argv[1:], "crf_distilbert")
+    #main(sys.argv[1:], "distilbert")
+    main(sys.argv[1:], "crf_distilbert")
 
