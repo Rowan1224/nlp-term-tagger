@@ -33,9 +33,25 @@ def main(annotation_files, type_model):
     ids_to_labels = {v: k for v, k in enumerate(sorted(unique_labels))}                
     
     if type_model == "crf_distilbert":
-        #model = BertModel(unique_labels)
         model = init_crfbert(ids_to_labels, unique_labels)
-    else:
+
+        output_path = "./output_model"
+        crf_train_sents = [' '.join(sent) for sent in train_sents]
+        crf_valid_sents = [' '.join(sent) for sent in valid_sents]
+        crf_train_labels = [' '.join(labels) for labels in train_labels]
+        crf_valid_labels = [' '.join(labels) for labels in valid_labels]
+
+        crf_train_dict = {"sentences": crf_train_sents, "labels": crf_train_labels}
+        crf_val_dict = {"sentences": crf_valid_sents, "labels": crf_valid_labels}
+        crf_train_set = Dataset.from_dict(crf_train_dict)
+        crf_val_set = Dataset.from_dict(crf_val_dict)
+        #print(crf_train_set[4]["sentences"])
+        #print(crf_train_set[4]["labels"])
+        train_crf = CustomTrainer(model, crf_train_set, crf_val_set, labels_to_ids)
+        train_crf.model_trainer(output_path)
+
+        raise SystemExit
+    elif type_model == "distilbert":
         model = DistilbertNER(unique_labels)
 
     chosen_tokenizer = model.tokenizer
@@ -44,23 +60,6 @@ def main(annotation_files, type_model):
     valid_dataset = AnnotatedDataset(valid_labels, valid_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
     test_dataset = AnnotatedDataset(test_labels, test_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
 
-    # crf_training
-    output_path = "./output_model"
-    crf_train_sents = [' '.join(sent) for sent in train_sents]
-    crf_valid_sents = [' '.join(sent) for sent in valid_sents]
-    crf_train_labels = [' '.join(labels) for labels in train_labels]
-    crf_valid_labels = [' '.join(labels) for labels in valid_labels]
-
-    crf_train_dict = {"sentences": crf_train_sents, "labels": crf_train_labels}
-    crf_val_dict = {"sentences": crf_valid_sents, "labels": crf_valid_labels}
-    crf_train_set = Dataset.from_dict(crf_train_dict)
-    crf_val_set = Dataset.from_dict(crf_val_dict)
-    #print(crf_train_set[4]["sentences"])
-    #print(crf_train_set[4]["labels"])
-    train_crf = CustomTrainer(model, crf_train_set, crf_val_set, labels_to_ids)
-    train_crf.model_trainer(output_path)
-
-    raise SystemExit
     train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
     valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True)
@@ -88,6 +87,6 @@ def main(annotation_files, type_model):
     #compute_metrics(pred_labels, true_labels, unique_labels)
 
 if __name__ == "__main__":
-    #main(sys.argv[1:], "distilbert")
-    main(sys.argv[1:], "crf_distilbert")
+    main(sys.argv[1:], "distilbert")
+    #main(sys.argv[1:], "crf_distilbert")
 
