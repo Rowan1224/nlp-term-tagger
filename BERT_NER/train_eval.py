@@ -54,8 +54,6 @@ class NERTrainer:
                 self.optimizer.zero_grad()
             loss, logits = self.model(input_ids=input_id, attention_mask=mask, labels= label, return_dict=False)
 
-
-
             if self.train:
                 torch.nn.utils.clip_grad_norm_(parameters=self.model.parameters(), max_norm=10)
                 loss.backward()
@@ -72,7 +70,6 @@ class NERTrainer:
         batch_size = logits.shape[0]
         for i in range(batch_size):
             
-
             mask = label[i] != -100
 
             label_clean = torch.masked_select(label[i], mask)
@@ -89,8 +86,8 @@ class NEREvaluation(NERTrainer):
     def __init__(self, model, train=False):
         self.total_acc = 0
         self.total_loss = 0
-        self.preds_viz = []
-        self.labels_viz = []
+        self.pred_sents = []
+        self.label_sents = []
         self.model = model
         self.train = train  # attr for train_val method
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -115,8 +112,8 @@ class NEREvaluation(NERTrainer):
             label_clean = torch.masked_select(label[i], mask)
             preds = torch.masked_select(logits[i].argmax(dim=1), mask)
             self.total_acc += (preds == label_clean).float().mean()/batch_size
-            self.preds_viz.extend(preds.cpu().numpy())
-            self.labels_viz.extend(label_clean.cpu().numpy())
+            self.pred_sents.append(preds.cpu().numpy())
+            self.label_sents.append(label_clean.cpu().numpy())
 
         self.total_loss += loss.item()
 

@@ -47,13 +47,8 @@ class AnnotatedDataset(Dataset):
                     #label_ids.append(self.labels_to_ids[labels[idx]])
                     label_ids.append(-100)
 
-            
+            assert len(label_ids) == 128, "alignment failing, len should be 128"
 
-            assert len(label_ids) == 128, "alignment failing, len should be 512"
-
-
-            
-            
             aligned_labels.append(label_ids)
 
         # for a, b in zip(aligned_labels[0],self.tokenizer.convert_ids_to_tokens(self.tokenized[0]["input_ids"])):
