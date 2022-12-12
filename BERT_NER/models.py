@@ -51,7 +51,7 @@ class CRFDistilBERT(nn.Module):
         attention_maskU = torch.flatten(attention_mask)
         idx = (labelsU == -100).nonzero(as_tuple=False)
         idx = torch.flatten(idx)
-        labelsU[idx] = torch.tensor(3)
+        labelsU[idx] = torch.tensor(0)
         attention_maskU[idx] = torch.tensor(0)
         labelsU = labelsU.reshape(shape)
         attention_maskU = attention_maskU.reshape(shape)
