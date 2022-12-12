@@ -15,7 +15,7 @@ from sklearn.metrics import classification_report
 def init_crfbert(ids_to_labels, unique_labels):
     crf_distilbert = CRFDistilBERT
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"  # allennlp and torch incompatible with my GPU
+    #device = "cpu"  # allennlp and torch incompatible with my GPU
     model = crf_distilbert(ids_to_labels, len(unique_labels), device=device)
     return model.to(device)
 
@@ -61,38 +61,37 @@ def main(annotation_files, type_model):
         train_crf = CustomTrainer(model, crf_train_set, crf_val_set, labels_to_ids)
         train_crf.model_trainer(output_path)
 
-        raise SystemExit  # testing stuff
     elif type_model == "distilbert":
         model = DistilbertNER(unique_labels)
 
-    chosen_tokenizer = model.tokenizer
+        chosen_tokenizer = model.tokenizer
 
-    train_dataset = AnnotatedDataset(train_labels, train_sents, labels_to_ids, tokenizer=chosen_tokenizer)
-    valid_dataset = AnnotatedDataset(valid_labels, valid_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
-    test_dataset = AnnotatedDataset(test_labels, test_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
+        train_dataset = AnnotatedDataset(train_labels, train_sents, labels_to_ids, tokenizer=chosen_tokenizer)
+        valid_dataset = AnnotatedDataset(valid_labels, valid_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
+        test_dataset = AnnotatedDataset(test_labels, test_sents, labels_to_ids, tokenizer=chosen_tokenizer)    
 
-    train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-    valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True)
-    
-    
-    trainer = NERTrainer(model.pretrained, train=True)
-    trained_model = trainer.epoch_loop(4, train_dataloader, valid_dataloader)  # seems to overfit after epoch 3
+        train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+        valid_dataloader = DataLoader(valid_dataset, batch_size=8, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True)
+        
+        
+        trainer = NERTrainer(model.pretrained, train=True)
+        trained_model = trainer.epoch_loop(4, train_dataloader, valid_dataloader)  # seems to overfit after epoch 3
 
-    print('\n'+"-"*10+"Token Evaluation"+"-"*10)
-    evaluation = NEREvaluation(trained_model, train=False)
-    evaluation.epoch_loop(1, test_dataloader)
+        print('\n'+"-"*10+"Token Evaluation"+"-"*10)
+        evaluation = NEREvaluation(trained_model, train=False)
+        evaluation.epoch_loop(1, test_dataloader)
 
-    pred_sent_labels = [' '.join([ids_to_labels[pred] for pred in pred_sent]) for pred_sent in evaluation.pred_sents]
-    true_sent_labels = [' '.join([ids_to_labels[true] for true in true_sent]) for true_sent in evaluation.label_sents]
-    pred_tokens = [tok for sent in pred_sent_labels for tok in sent.split(' ')]
-    true_tokens = [tok for sent in true_sent_labels for tok in sent.split(' ')]
+        pred_sent_labels = [' '.join([ids_to_labels[pred] for pred in pred_sent]) for pred_sent in evaluation.pred_sents]
+        true_sent_labels = [' '.join([ids_to_labels[true] for true in true_sent]) for true_sent in evaluation.label_sents]
+        pred_tokens = [tok for sent in pred_sent_labels for tok in sent.split(' ')]
+        true_tokens = [tok for sent in true_sent_labels for tok in sent.split(' ')]
 
-    storing_data = {"ground_truths_gold": true_sent_labels, "predictions": pred_sent_labels}
-    df = pd.DataFrame(storing_data)
-    df.to_csv("./bert_results.csv", header=True, index=False)
-    report = classification_report(pred_tokens, true_tokens)
-    print(report)
+        report = classification_report(pred_tokens, true_tokens)
+        print(report)
+    #storing_data = {"ground_truths_gold": true_sent_labels, "predictions": pred_sent_labels}
+    #df = pd.DataFrame(storing_data)
+    #df.to_csv("./bert_results.csv", header=True, index=False)
 
     print('\n'+"-"*10+"Span Evaluation"+"-"*10)
     #compute_metrics(pred_labels, true_labels, unique_labels)
