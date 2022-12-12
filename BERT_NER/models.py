@@ -64,7 +64,7 @@ class CRFDistilBERT(nn.Module):
         embedded_text_input = self.pretrained_encoder(input_ids=input_ids, attention_mask=attention_mask)
         embedded_text_input = embedded_text_input.last_hidden_state
 
-        embedded_text_input = self.dropout(F.leaky_rule(embedded_text_input))
+        # embedded_text_input = self.dropout(F.leaky_rule(embedded_text_input))
         token_scores = self.feedforward(embedded_text_input)
 
         token_scores = F.log_softmax(token_scores, dim=-1)

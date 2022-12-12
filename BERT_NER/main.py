@@ -97,6 +97,6 @@ def main(annotation_files, type_model):
     #compute_metrics(pred_labels, true_labels, unique_labels)
 
 if __name__ == "__main__":
-    main(sys.argv[1:], "distilbert")
-    #main(sys.argv[1:], "crf_distilbert")
+    #main(sys.argv[1:], "distilbert")
+    main(sys.argv[1:], "crf_distilbert")
 

@@ -19,8 +19,8 @@ class CustomTrainer:
         self.learning_rate = lr
         self.train_batch_size = 8
         self.val_batch_size = 8
-        self.save_steps = 500
-        self.eval_steps = 500
+        self.save_steps = 50
+        self.eval_steps = 50
         self.save_limit = 2
         self.warmup_steps = 100
         self.grad_acc_steps = 2
