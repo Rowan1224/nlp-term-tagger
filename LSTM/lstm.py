@@ -11,240 +11,14 @@ import pandas as pd
 from sklearn.metrics import classification_report
 from entityDataset import EntityDataset
 from model import RNN
-import argparse
-
-
-def create_arg_parser():
-
-    """Returns a map with commandline parameters taken from the user"""
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-b", "--batch", default=8, type=int, help="Provide the number of batch"
-    )
-    parser.add_argument(
-        "-epoch", "--epoch", default=10, type=int, help="Provide the number of epochs"
-    )
-    parser.add_argument(
-        "-layers", "--layers", default=5, type=int, help="Provide the number of batch"
-    )
-    parser.add_argument(
-        "-hidden", "--hidden_size", default=32, type=int, help="Provide the number of epochs"
-    )
-    parser.add_argument(
-        "-lr",
-        "--learning_rate",
-        default=0.01,
-        type=float,
-        help="Provide the learning rate",
-    )
-    parser.add_argument(
-        "-l",
-        "--seq_length",
-        default=96,
-        type=int,
-        help="define Max sequence length",
-    )
-
-    parser.add_argument(
-        "-e",
-        "--embedding_size",
-        default=100,
-        type=int,
-        choices=[50, 100, 300],
-        help="Select the model type for training (fine-tuning or domain adaption on SQuAD model)",
-    )
-
-    parser.add_argument(
-        "-v",
-        "--vector_path",
-        type=str,
-        default="./glove.6B/glove.6B.100d.txt",
-        help="Word Embedding Path",
-    )
-
-    args = parser.parse_args()
-    return args
-
-
-def index_to_tag(labels, MAX_SEQ_LENGTH=96):
-    
-    """convert a batch of label indices to list of tags"""
-    
-    #define index to tag mapping
-    indexMap = {0:'B', 1:'I', 2:'O'}
-    
-    #reshape labels to batch_size*MAX_SEQ_LENGTH
-    labels = labels.reshape((-1,MAX_SEQ_LENGTH))
-    
-    batchTags = []
-    
-    #convert label index to tags
-    for batch in labels:
-    
-        tags = [indexMap[idx.item()] for idx in batch]
-        
-        batchTags.append(tags)
-    
-    return batchTags
-
-def index_to_token(token_ids, VOCAB):
-    
-    """convert a batch of token indices to list of strings"""
-    
-    batchSent = []
-    
-    for item in token_ids:
-    
-        sent = [VOCAB[idx-1] if idx < len(VOCAB) else 'UNK' for idx in item if idx!=0]
-        
-        batchSent.append(sent)
-    
-    return batchSent
-
-
-def print_predictions(tokens, pred_tags, true_tags, VOCAB, MAX_SEQ_LENGTH=96):
-    
-    
-    batch_tokens = index_to_token(tokens, VOCAB)
-      
-    batch_pred_tags = index_to_tag(pred_tags, MAX_SEQ_LENGTH)
-    
-    batch_true_tags = index_to_tag(true_tags, MAX_SEQ_LENGTH)
-        
-    
-    from colorama import Style, Back
-    
-    outputs = []
-    
-    preds = []
-    
-    true = []
-    
-    for tokens,true_tags,pred_tags in zip(batch_tokens,batch_pred_tags,batch_true_tags):
-        
-        true_tags = true_tags[:len(tokens)]
-        pred_tags = pred_tags[:len(tokens)]
-        
-        output = []
-    
-        for t,tl,pl in zip(tokens,true_tags,pred_tags):
-
-            assert len(tokens) == len(pred_tags) == len(true_tags)
-
-            if tl == pl:
-                o = f"{t} {Back.GREEN}[{tl}][{pl}]{Style.RESET_ALL}"
-
-            else:
-                o = f"{t} {Back.GREEN}[{tl}]{Style.RESET_ALL}{Back.RED}[{pl}]{Style.RESET_ALL}"
-
-
-            output.append(o)
-            
-        outputs.append(" ".join(output))
-        preds.append(pred_tags)
-        true.append(true_tags)
-    
-    return outputs, preds, true
+from model_crf import RNN_CRF
+from args import create_arg_parser
+from train import train_step
+from eval import eval
 
 
 
-def eval_lstm(model, eval_dataloader, VOCAB=None, MAX_SEQ_LENGTH=96, return_predictions = False):
-    
-    model = copy.deepcopy(model)
-    # Set the model in 'evaluation' mode (this disables some layers (batch norm, dropout...) which are not needed when testing)
-    model.eval() 
-    
-    predictions = []
-
-    # In evaluation phase, we don't need to compute gradients (for memory efficiency)
-    with torch.no_grad():
-        # initialize the total and correct number of labels to compute the accuracy
-        correct_labels = 0
-        total_labels = 0
-        
-        # Iterate over the dataset using the dataloader
-        for batch in eval_dataloader:
-
-            #get sentences and labels
-            sent = batch['token_ids']
-            labels = batch['labels']
-            
-            
-            #get number of class or tags
-            num_class = labels.shape[-1]
-    
-            #find the padded tokens
-            padx = (sent > 0).float()
-            
-            #reshape it to make it as the same shape with labels
-            padx = padx.reshape(-1)
-  
-            #count non-pad tokens
-            num_tokens = padx.sum().item()
-        
-            #count padded tokens
-            num_pad_tokens = padx.shape[0] - num_tokens
-            
-            #reshape it to make it as the same shape with model output
-            labels = labels.reshape(-1,num_class)
-            
-            # Get the predicted labels
-            y_predicted = model(sent)
-            
-            # To get the predicted labels, we need to get the max over all possible classes
-            # multiply with padx to ignore padded token predictions 
-            label_predicted = torch.argmax(y_predicted.data, 1)*padx
-            labels = torch.argmax(labels, 1)*padx
-            
-
-            # Compute accuracy: count the total number of samples,
-            #and the correct labels (compare the true and predicted labels)
-            
-            total_labels += num_tokens #only added the non-padded tokens in count
-            
-            # subtract the padded tokens to ignore padded token predictions in final count
-            correct_labels += ((label_predicted == labels).sum().item() - num_pad_tokens)
-            
-            # get output
-            if return_predictions:
-                predictions.append(print_predictions(sent,label_predicted,labels, VOCAB, MAX_SEQ_LENGTH))
-    
-    accuracy = 100 * correct_labels / total_labels
-    
-    if return_predictions:
-        return accuracy, predictions
-    
-    return accuracy
-
-
-def loss_fn(outputs, labels):
-    
-    #define cross entropy loss 
-    criterion = nn.CrossEntropyLoss(reduction='none')
-    
-    #reshape labels to give a flat vector of length batch_size*seq_len
-    num_class = labels.shape[-1]
-    
-    # reshape label to make it similar to model output
-    labels = labels.reshape(-1,num_class) 
-
-    #get loss
-    loss = criterion(outputs, labels.float())
-    
-    #get non-pad index
-    non_pad_index=[i for i in range(labels.shape[0]) if labels[i].sum()!=0]
-    
-    #get final loss
-    loss = loss[non_pad_index].mean()
-    
-    return loss
-    
-
-      
-    
-
-def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learning_rate, verbose=True):
+def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learning_rate, device='cpu',verbose=True):
 
     # Make a copy of the model (avoid changing the model outside this function)
     model_tr = copy.deepcopy(model)
@@ -269,34 +43,11 @@ def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learnin
     # Training loop
     for epoch in range(num_epochs):
         # Initialize the training loss for the current epoch
-        loss_current_epoch = 0
-        val_loss_epoch = 0
-        
-        # Iterate over batches using the dataloader
-        for batch_index, batch in enumerate(train_dataloader):
-            
-            label = batch['labels']
-
-            optimizer.zero_grad()
-            
-            out = model_tr.forward(batch['token_ids'])
-            l = loss_fn(out,label)
-            l.backward()
-            optimizer.step()
-            loss_current_epoch += (l.item())
-            
-            val_loss_epoch += loss_fn(out,label).item()
+        loss_current_epoch = train_step(model_tr, train_dataloader, optimizer)
+        val_loss_epoch = train_step(model_tr, valid_dataloader, optimizer, validation=True)
 
 
-        # At the end of each epoch, record and display the loss over all batches in train and val set
-        loss_current_epoch = loss_current_epoch/len(train_dataloader)
-        val_loss_epoch = val_loss_epoch/len(train_dataloader)
-        
-        loss_all_epochs.append(loss_current_epoch)
-        val_loss_all_epochs.append(val_loss_epoch)
-        
-        # 
-        acc = eval_lstm(model_tr, valid_dataloader)
+        acc = eval(model_tr, valid_dataloader,device=device)
         
         accuracy.append(acc)
         if acc > best_accuracy:
@@ -306,7 +57,7 @@ def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learnin
         
         
         if verbose:
-            print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, loss_current_epoch))
+            print('Epoch [{}/{}],Train Loss: {:.4f} Val Loss: {:.4f}'.format(epoch+1, num_epochs, loss_current_epoch, val_loss_epoch))
         
     return model_tr, loss_all_epochs ,accuracy
 
@@ -315,7 +66,7 @@ def main():
 
 
     use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda:0" if use_cuda else "cpu")
+    device = torch.device("cuda" if use_cuda else "cpu")
 
     args = create_arg_parser()
 
@@ -361,12 +112,20 @@ def main():
     # output size i.e class size 
     output_size = 3
     # activation function
-    act_fn = nn.LogSoftmax(dim=1)
+    act_fn = nn.LogSoftmax(dim=-1)
+
+    use_crf = args.use_crf
 
     # create a RNN  model instance. REMARK: remove .cuda() at the end if gpu is not available
     
-    rnn = RNN(vocab_size, emb_dim, word_embeddings, max_sequence_length, 
+    if use_crf:
+        rnn = RNN_CRF(vocab_size, emb_dim, word_embeddings, max_sequence_length, 
             num_layers,hidden_size, bidirectional, output_size, act_fn, device)
+    else:
+        rnn = RNN(vocab_size, emb_dim, word_embeddings, max_sequence_length, 
+            num_layers,hidden_size, bidirectional, output_size, act_fn, device)
+
+    # 
 
 
     rnn.to(device)
@@ -377,20 +136,10 @@ def main():
     learning_rate = args.learning_rate
 
     # train model
-    model_tr, loss_all_epochs, accuracy = training_lstm(rnn, train_dataloader, valid_dataloader, num_epochs, learning_rate)
+    model_tr, loss_all_epochs, accuracy = training_lstm(rnn, train_dataloader, valid_dataloader, num_epochs, learning_rate, device)
 
 
-
-    # plt.figure()
-    # epochs = [i for i in range(num_epochs)]
-    # plt.plot(epochs, loss_all_epochs, 'r', label='Loss')
-    # plt.xlabel('epochs'), plt.ylabel('loss')
-    # plt.legend()
-    # plt.show()
-
-
-
-    acc, preds = eval_lstm(model_tr,test_dataloader,VOCAB, MAX_SEQ_LENGTH, True)
+    acc, preds = eval(model_tr,test_dataloader,VOCAB, MAX_SEQ_LENGTH, device, True, use_crf)
     outputs=[]
     pred_labels=[]
     true_labels = []
