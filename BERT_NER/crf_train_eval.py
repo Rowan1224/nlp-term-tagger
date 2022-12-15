@@ -24,9 +24,10 @@ class CustomTrainer:
         self.save_limit = 2
         self.warmup_steps = 100
         self.grad_acc_steps = 2
+        self.max_len = 256
         
     def tokenized_data(self, labels_to_ids):
-        collator = PreDataCollator(tokenizer=self.model.tokenizer, max_len=128, tags_to_ids=labels_to_ids)
+        collator = PreDataCollator(tokenizer=self.model.tokenizer, max_len=self.max_len, tags_to_ids=labels_to_ids)
         self.train_dataset = self.train_dataset.map(collator, batch_size=4, num_proc=4, batched=True)
         self.eval_dataset = self.eval_dataset.map(collator, batch_size=4, num_proc=4, batched=True)
         
@@ -75,3 +76,50 @@ class CustomTrainer:
         f1 = metric_f1.compute(predictions=train_predicts, references=train_labels, average="macro")
     
         return {"accuracy": acc["accuracy"], "f1": f1["f1"]}
+
+class CustomEval(CustomTrainer):
+
+    def __init__(self, model, labels_to_ids, test_set):
+
+        self.model = model
+        self.max_len = 128
+        self.tokenized_data(labels_to_ids)
+        self.test_dataset = test_set
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def tokenized_data(self, labels_to_ids):
+        collator = PreDataCollator(tokenizer=self.model.tokenizer, max_len=self.max_len, tags_to_ids=labels_to_ids)
+        self.test_dataset = self.train_dataset.map(collator, batch_size=4, num_proc=4, batched=True)
+        
+
+    def compute_metrics(self, preds, labels):
+    
+        metric_acc = evaluate.load("accuracy")
+        metric_f1 = evaluate.load("f1")
+        tr_active_acc = labels != -100
+        pr_active_acc = preds != -100
+        
+        tags = torch.masked_select(labels, tr_active_acc)
+        predicts = torch.masked_select(preds, pr_active_acc)
+
+        acc = metric_acc.compute(predictions=predicts, references=tags)
+        f1 = metric_f1.compute(predictions=predicts, references=tags, average="macro")
+    
+        return {"accuracy": acc["accuracy"], "f1": f1["f1"]}
+
+    def evaluating(self):
+
+        acc = 0
+        f1 = 0
+        size_dataset = len(self.test_data)
+
+        for i in range(size_datasest):
+            label_ids = torch.Tensor([self.test_data[i]["labels"]]).to(device)
+            input_ids = torch.Tensor([self.test_data[i]["input_ids"]]).to(device)
+            mask = torch.Tensor([self.test_data[i]["attention_mask"]]).to(device)
+            _, logits = self.model(input_ids=input_ids, attention_mask=mask, labels=label_ids, return_dict=False)
+            result = self.compute_metrics(preds, labels)
+            acc += result["accuracy"]
+            f1 += result["f1"]
+
+        print("Accuracy: " + str(acc/size_dataset) + "\nF1: " + str(f1/size_dataset))

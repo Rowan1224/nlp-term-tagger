@@ -12,10 +12,9 @@ from sklearn.metrics import classification_report
 #import tqdm
 
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def init_crfbert(ids_to_labels, unique_labels):
     crf_distilbert = CRFDistilBERT
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #device = "cpu"  # allennlp and torch incompatible with my GPU
     model = crf_distilbert(ids_to_labels, len(unique_labels), device=device)
     return model.to(device)
 
@@ -35,7 +34,7 @@ def main(annotation_files, type_model):
     if type_model == "crf_distilbert":
         model = init_crfbert(ids_to_labels, unique_labels)
 
-        output_path = "./output_model"
+        output_path = "./output_model/" + type_model
         crf_train_sents = [' '.join(sent) for sent in train_sents]
         crf_valid_sents = [' '.join(sent) for sent in valid_sents]
         crf_train_labels = [' '.join(labels) for labels in train_labels]
@@ -60,6 +59,14 @@ def main(annotation_files, type_model):
         #print(crf_train_set[4]["labels"])
         train_crf = CustomTrainer(model, crf_train_set, crf_val_set, labels_to_ids)
         train_crf.model_trainer(output_path)
+        
+        checkpoint_num = 5500
+        saved_model = output_path + f"-{checkpoint_num}/pytorch_model.bin"
+        model = init_crfbert(ids_to_labels, unique_labels)
+        checkpoint = torch.load(saved_model)
+        checkpoint = model.load_state_dict(checkpoint)
+        model.to(device)
+
 
     elif type_model == "distilbert":
         model = DistilbertNER(unique_labels)
@@ -79,8 +86,8 @@ def main(annotation_files, type_model):
         trained_model = trainer.epoch_loop(4, train_dataloader, valid_dataloader)  # seems to overfit after epoch 3
 
         print('\n'+"-"*10+"Token Evaluation"+"-"*10)
-        evaluation = NEREvaluation(trained_model, train=False)
-        evaluation.epoch_loop(1, test_dataloader)
+        evaluation = NEREvaluation(trained_model)
+        evaluation.evaluating(test_dataloader)  # changes added
 
         pred_sent_labels = [' '.join([ids_to_labels[pred] for pred in pred_sent]) for pred_sent in evaluation.pred_sents]
         true_sent_labels = [' '.join([ids_to_labels[true] for true in true_sent]) for true_sent in evaluation.label_sents]
@@ -97,6 +104,6 @@ def main(annotation_files, type_model):
     #compute_metrics(pred_labels, true_labels, unique_labels)
 
 if __name__ == "__main__":
-    #main(sys.argv[1:], "distilbert")
-    main(sys.argv[1:], "crf_distilbert")
+    main(sys.argv[1:], "distilbert")
+    #main(sys.argv[1:], "crf_distilbert")
 

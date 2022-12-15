@@ -52,7 +52,7 @@ class NERTrainer:
 
             if self.train:
                 self.optimizer.zero_grad()
-            loss, logits = self.model(input_ids=input_id, attention_mask=mask, labels= label, return_dict=False)
+            loss, logits = self.model(input_ids=input_id, attention_mask=mask, labels=label, return_dict=False)
 
             if self.train:
                 torch.nn.utils.clip_grad_norm_(parameters=self.model.parameters(), max_norm=10)
@@ -61,7 +61,7 @@ class NERTrainer:
 
             self.clean_logits(logits, label, loss)
             
-        epoch_acc = self.total_acc / (len(train_data))
+        epoch_acc = self.total_acc / len(train_data)
         epoch_loss = self.total_loss / len(train_data)
         return epoch_acc, epoch_loss
 
@@ -77,45 +77,60 @@ class NERTrainer:
             preds = torch.masked_select(logits[i].argmax(dim=1), mask)
 
             self.total_acc += (preds == label_clean).float().mean()/batch_size
+            #self.total_acc += (preds == label_clean).float().mean()
 
         self.total_loss += loss.item()
 
 
 class NEREvaluation(NERTrainer):
 
-    def __init__(self, model, train=False):
-        self.total_acc = 0
-        self.total_loss = 0
+    def __init__(self, model):
+        self.total_labels
+        self.correct_labels = 0
         self.pred_sents = []
         self.label_sents = []
         self.model = model
-        self.train = train  # attr for train_val method
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def epoch_loop(self, epochs, eval_data):
+    def evaluating(self, eval_data):
 
         self.model.to(self.device)
+        self.model.eval()
 
-        for epoch in range(epochs):
- 
-            self.model.eval()
-            epoch_acc, epoch_loss = self.train_val_loop(eval_data)
-            print(f"Eval Epoch {epoch+1} | Loss {epoch_loss:.3f} | Accuracy {epoch_acc:.3f}")
+        with torch.no_grad():
+            batch_acc = self.eval_loop(eval_data)
+        print(f"Accuracy {batch_acc:.3f}%")
 
-        return None
+        return batch_acc
+    
+    def eval_loop(self, eval_data):  # may need to pass to DataSequence
 
-    def clean_logits(self, logits, label, loss):
+        for data, label in eval_data:
+            
+            label = label.to(self.device)
+            mask = data["attention_mask"].to(self.device) 
+            input_id = data['input_ids'].to(self.device)
+
+            _, logits = self.model(input_ids=input_id, attention_mask=mask, labels=label, return_dict=False)  # loss
+
+            self.clean_logits(logits, label)
+            
+        eval_acc = self.correct_labels / len(self.total_labels)  #  - num of padded_tokens? change correct from mean to sum
+        return eval_acc * 100
+
+    def clean_logits(self, logits, label):
 
         batch_size = logits.shape[0]
         for i in range(batch_size):
             mask = label[i] != -100
             label_clean = torch.masked_select(label[i], mask)
+            self.total_labels += label_clean.shape[0]
             preds = torch.masked_select(logits[i].argmax(dim=1), mask)
-            self.total_acc += (preds == label_clean).float().mean()/batch_size
+            self.correct_labels += (preds == label_clean).sum().item()
+            #self.correct_labels += (preds == label_clean).float().mean()
             self.pred_sents.append(preds.cpu().numpy())
             self.label_sents.append(label_clean.cpu().numpy())
 
-        self.total_loss += loss.item()
 
 def create_raw_data(annotations_file):
 
