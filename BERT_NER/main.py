@@ -3,11 +3,11 @@ from models import DistilbertNER, CRFDistilBERT
 from train_eval import NERTrainer, NEREvaluation, create_raw_data
 from datasets import Dataset
 from torch.utils.data import DataLoader
-#from deeper_ner_eval import compute_metrics
+from deeper_ner_eval import compute_metrics
 import sys
 import torch  # using torch 1.12.1
 import pandas as pd
-from crf_train_eval import CustomTrainer
+from crf_train_eval import CustomTrainer, CustomEval
 from sklearn.metrics import classification_report
 #import tqdm
 
@@ -32,6 +32,7 @@ def main(annotation_files, type_model):
     ids_to_labels = {v: k for v, k in enumerate(sorted(unique_labels))}                
     
     if type_model == "crf_distilbert":
+        pass
         model = init_crfbert(ids_to_labels, unique_labels)
 
         output_path = "./output_model/" + type_model
@@ -55,6 +56,7 @@ def main(annotation_files, type_model):
 
         crf_train_set = Dataset.from_dict(crf_train_dict)
         crf_val_set = Dataset.from_dict(crf_val_dict)
+        crf_test_set = Dataset.from_dict(crf_test_dict)
         #print(crf_train_set[4]["sentences"])
         #print(crf_train_set[4]["labels"])
         train_crf = CustomTrainer(model, crf_train_set, crf_val_set, labels_to_ids)
@@ -62,10 +64,14 @@ def main(annotation_files, type_model):
         
         checkpoint_num = 5500
         saved_model = output_path + f"-{checkpoint_num}/pytorch_model.bin"
-        model = init_crfbert(ids_to_labels, unique_labels)
+        model_eval = init_crfbert(ids_to_labels, unique_labels)
         checkpoint = torch.load(saved_model)
-        checkpoint = model.load_state_dict(checkpoint)
-        model.to(device)
+        model_eval.load_state_dict(checkpoint)
+        model_eval.to(device)
+        test_crf = CustomEval(model_eval, labels_to_ids=labels_to_ids, test_set=crf_test_set)
+        test_crf.evaluating()
+        
+
 
 
     elif type_model == "distilbert":

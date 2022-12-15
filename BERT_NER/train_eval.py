@@ -18,6 +18,10 @@ class NERTrainer:
         # self.device = torch.device("cpu")
         # if we have gpu
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        seed = 42
+        torch.manual_seed(seed)
+        if self.device == "cuda":
+            torch.cuda.manual_seed(seed)
 
 
     def epoch_loop(self, epochs, train_data, val_data):
@@ -85,7 +89,7 @@ class NERTrainer:
 class NEREvaluation(NERTrainer):
 
     def __init__(self, model):
-        self.total_labels
+        self.total_labels = 0
         self.correct_labels = 0
         self.pred_sents = []
         self.label_sents = []
@@ -115,7 +119,7 @@ class NEREvaluation(NERTrainer):
 
             self.clean_logits(logits, label)
             
-        eval_acc = self.correct_labels / len(self.total_labels)  #  - num of padded_tokens? change correct from mean to sum
+        eval_acc = self.correct_labels / self.total_labels  #  - num of padded_tokens? change correct from mean to sum
         return eval_acc * 100
 
     def clean_logits(self, logits, label):

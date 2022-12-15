@@ -113,12 +113,12 @@ class CustomEval(CustomTrainer):
         f1 = 0
         size_dataset = len(self.test_data)
 
-        for i in range(size_datasest):
+        for i in range(size_dataset):
             label_ids = torch.Tensor([self.test_data[i]["labels"]]).to(device)
             input_ids = torch.Tensor([self.test_data[i]["input_ids"]]).to(device)
             mask = torch.Tensor([self.test_data[i]["attention_mask"]]).to(device)
             _, logits = self.model(input_ids=input_ids, attention_mask=mask, labels=label_ids, return_dict=False)
-            result = self.compute_metrics(preds, labels)
+            result = self.compute_metrics(logits, label_ids)
             acc += result["accuracy"]
             f1 += result["f1"]
 
