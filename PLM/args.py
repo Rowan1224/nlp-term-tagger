@@ -6,21 +6,16 @@ def create_arg_parser():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--batch", default=8, type=int, help="Provide the number of batch"
+        "-b", "--batch", default=4, type=int, help="Provide the number of batch"
     )
     parser.add_argument(
         "-epoch", "--epoch", default=10, type=int, help="Provide the number of epochs"
     )
-    parser.add_argument(
-        "-layers", "--layers", default=5, type=int, help="Provide the number of batch"
-    )
-    parser.add_argument(
-        "-hidden", "--hidden_size", default=32, type=int, help="Provide the number of epochs"
-    )
+
     parser.add_argument(
         "-lr",
         "--learning_rate",
-        default=0.01,
+        default=1e-5,
         type=float,
         help="Provide the learning rate",
     )
@@ -32,28 +27,28 @@ def create_arg_parser():
         help="define Max sequence length",
     )
 
-    parser.add_argument(
-        "-emb",
-        "--embedding_size",
-        default=100,
-        type=int,
-        choices=[50, 100, 200, 300],
-        help="Select the model type for training (fine-tuning or domain adaption on SQuAD model)",
-    )
 
     parser.add_argument(
-        "-v",
-        "--vector_path",
+        "-m",
+        "--model_name",
         type=str,
-        default="./glove.6B/glove.6B.100d.txt",
-        help="Word Embedding Path",
+        default="bert-base-uncased",
+        help="pre-trained model",
     )
 
     parser.add_argument(
         "-c",
         "--use_crf",
         action='store_true',
-        help="Pass if you train LSTM with CRF layer",
+        help="Pass if you train pre-trained model with CRF layer",
+    )
+
+    parser.add_argument(
+        "-checkpoint",
+        "--checkpoint",
+        type=str,
+        default="500",
+        help="Define Best checkpoint",
     )
 
     args = parser.parse_args()

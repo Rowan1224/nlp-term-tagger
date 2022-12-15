@@ -6,19 +6,25 @@ import torch.nn as nn
 import random
 from torch.utils.data import DataLoader
 import copy
-import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import classification_report
 from entityDataset import EntityDataset
-from model import RNN
-from model_crf import RNN_CRF
+from model import RNN_CRF, RNN
 from args import create_arg_parser
 from train import train_step
 from eval import eval
+from utils import span_evaluation
+import os
+
+SEED = 42
+
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
 
 
-
-def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learning_rate, device='cpu',verbose=True):
+def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learning_rate, device='cpu', verbose=True, use_crf=False):
 
     # Make a copy of the model (avoid changing the model outside this function)
     model_tr = copy.deepcopy(model)
@@ -52,7 +58,11 @@ def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learnin
         accuracy.append(acc)
         if acc > best_accuracy:
             best_accuracy = acc
-            torch.save(model_tr.state_dict(), 'model_opt.pt')
+            name = 'CRF' if use_crf else 'Base'
+            if not os.path.exists('./output/'):
+                os.mkdir('./output')
+
+            torch.save(model_tr.state_dict(), f'output/model-{name}.pt')
             
         
         
@@ -74,12 +84,7 @@ def main():
     EMB_DIMENSION = args.embedding_size
     MAX_SEQ_LENGTH = args.seq_length
 
-    SEED = 42
 
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
     dataset_train = EntityDataset('../Dataset/train',VECTOR_PATH, EMB_DIMENSION,MAX_SEQ_LENGTH,  device)
     dataset_test = EntityDataset('../Dataset/test',VECTOR_PATH,EMB_DIMENSION, MAX_SEQ_LENGTH, device)
     dataset_dev = EntityDataset('../Dataset/dev',VECTOR_PATH,EMB_DIMENSION, MAX_SEQ_LENGTH, device)
@@ -136,7 +141,7 @@ def main():
     learning_rate = args.learning_rate
 
     # train model
-    model_tr, loss_all_epochs, accuracy = training_lstm(rnn, train_dataloader, valid_dataloader, num_epochs, learning_rate, device)
+    model_tr, loss_all_epochs, accuracy = training_lstm(rnn, train_dataloader, valid_dataloader, num_epochs, learning_rate, device, use_crf=use_crf)
 
 
     acc, preds = eval(model_tr,test_dataloader,VOCAB, MAX_SEQ_LENGTH, device, True, use_crf)
@@ -164,13 +169,15 @@ def main():
     df['true'] = true_spans
     df['preds'] = pred_spans
 
-    df.to_csv('outputs.csv',index=False)
+    print("#"*50)
+    print('Span Level Evaluation')
+    print("#"*50)
+    span_evaluation(true_spans,pred_spans)
+    print("#"*50)
 
-    # for i, out in enumerate(outputs[:3]):
-    #     print(out)
-    #     print('\n')
 
-
+    name = 'CRF' if use_crf else 'Base'
+    df.to_csv(f'./output/outputs-{name}.csv',index=False)
 
 
 
