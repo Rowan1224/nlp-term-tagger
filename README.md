@@ -9,7 +9,7 @@
 
 Execute ``run.sh`` file to train and evaluate models:
 
-Command: ``run.sh [bert/lstm] [crf/base]``
+Command: ``run.sh [bert/lstm/distilbert] [crf/base]``
 
 Example:
 
