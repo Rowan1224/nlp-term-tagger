@@ -12,11 +12,11 @@ if [ "$1" = "lstm" ]; then
 elif [ "$1" = "bert" ]; then
     cd ./PLM
     if [ "$2" = "crf" ]; then
-        python train.py -c #-b 4 -epoch 10 -l 128 -lr 1e-5
-        pythom eval.py -c #-b 4 -epoch 10 -l 128 -lr 1e-5
+        python train.py -c #-b 4 -epoch 10 -l 128 -lr 1e-5 -m bert-base-uncased
+        pythom eval.py -c #-b 4 -epoch 10 -l 128 -lr 1e-5 -m bert-base-uncased
     else
-        python train.py #-b 4 -epoch 10 -l 128 -lr 1e-5 -m bert
-        pythom eval.py #-b 4 -epoch 10 -l 128 -lr 1e-5 -m bert
+        python train.py #-b 4 -epoch 10 -l 128 -lr 1e-5 -m bert-base-uncased
+        pythom eval.py #-b 4 -epoch 10 -l 128 -lr 1e-5 -m bert-base-uncased
     fi
 else
     cd ./Baseline
