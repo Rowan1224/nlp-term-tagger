@@ -3,8 +3,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from colorama import Style, Back
 from utils import get_span
+import numpy as np
 from sklearn import metrics
 from collections import Counter
+
+#TODO: MULTICLASS MATRIX https://aihints.com/seaborn-confusion-matrix-plot-confusion-matrix-in-python/
 
 def bar_plot(dev, test, train):
     datasets = {"Train": train, "Dev": dev, "Test": test}
@@ -13,8 +16,10 @@ def bar_plot(dev, test, train):
     print(viz_labels_df)
     df = pd.melt(viz_labels_df, id_vars="Dataset", var_name="Tags", value_name="Count")
     print(df)
-    fig = sns.catplot(x='Dataset', y='Count', hue='Tags', data=df, kind='bar')
-    fig.savefig("Distribution of Tags.png")
+    fig = sns.catplot(x='Dataset', y='Count', hue='Tags', data=df, kind='bar', palette="pastel")
+    fig.set(title='Tag Distribution')
+    fig.set_style("whitegrid")
+    fig.savefig("Distribution of Tags.png", bbox_inches="tight")
 
 def dataset_explorer(path):
 
@@ -117,13 +122,14 @@ def main():
     overall_mod_2 = []
     for i in range(bert_base.shape[0]):
         #pred_1 = bert_base["predictions"].iloc[i]
-        pred_1 = distilbert_base["predictions"].iloc[i]
-        #pred_1 = lstm_base["predictions"].iloc[i]
-        pred_2 = crf_distilbert["predictions"].iloc[i]
+        #pred_1 = distilbert_base["predictions"].iloc[i]
+        pred_1 = lstm_base["predictions"].iloc[i]
+        #pred_2 = crf_distilbert["predictions"].iloc[i]
         #pred_2 = crf_bert["predictions"].iloc[i]
-        #pred_2 = lstm_crf["predictions"].iloc[i]
-        true = distilbert_base["true"].iloc[i]
+        pred_2 = lstm_crf["predictions"].iloc[i]
+        #true = distilbert_base["true"].iloc[i]
         #true = bert_base["true"].iloc[i]
+        true = lstm_base["true"].iloc[i]
         #sent = bert_base["sent"].iloc[i]
         qual_results, mod_1_res, mod_2_res = span_counter(true, pred_1, pred_2)
         overall_mod_1.extend(mod_1_res)
@@ -140,36 +146,47 @@ def main():
     #spans.to_csv("DistilBERT_and_CRF.csv")
     #spans.to_csv("LSTM_and_CRF.csv")
     print(spans.head())
-    #print(spans["both_corr"].sum())
-    #print(spans["m1_only"].sum())
-    #print(spans["m2_only"].sum())
-    #print(spans["both_incorr"].sum())
     # Select Confusion Matrix Size
     results = [[spans["both_corr"].sum(), spans["m1_only"].sum()],
                [spans["m2_only"].sum(), spans["both_incorr"].sum()]]
+    results = np.array(results)
     plt.figure(figsize=(10, 8))
     
     # Create Confusion Matrix
     x_axis_labels = ["Model 2 Correct", "Model 2 Incorrect"]
     y_axis_labels = ["Model 1 Correct", "Model 2 Incorrect"]
-    sns_confusion = sns.heatmap(results, annot=True, fmt='d', xticklabels=x_axis_labels, yticklabels=y_axis_labels)
-    #sns_confusion = sns.heatmap(results, annot=label_res, fmt='d')
     
+    # Set names to show in boxes
+    classes = ["True Positive","False Negative","False Positive","True Negative"]
+    
+    # Set values format
+    values = ["{0:0.0f}".format(x) for x in results.flatten()]
+    
+    # Find percentages and set format
+    percentages = ["{0:.1%}".format(x) for x in results.flatten()/np.sum(results)]
+    
+    # Combine classes, values and percentages to show 
+    combined = [f"{i}\n{j}\n{k}" for i, j, k in zip(classes, values, percentages)]
+    combined = np.asarray(combined).reshape(2,2)
+
+
+    #sns_confusion = sns.heatmap(results, annot=True, fmt='d', xticklabels=x_axis_labels, yticklabels=y_axis_labels)
+    sns_confusion = sns.heatmap(results, annot=combined, xticklabels=x_axis_labels, yticklabels=y_axis_labels, cmap="YlGnBu", fmt="")
     # Set the Title
-    #sns_confusion.set(title='LSTM Confusion Matrix')
+    sns_confusion.set(title='LSTM Confusion Matrix')
     #sns_confusion.set(title='BERT Confusion Matrix')
-    sns_confusion.set(title='DistilBERT Confusion Matrix')
+    #sns_confusion.set(title='DistilBERT Confusion Matrix')
     
     # Set the Labels
-    #sns_confusion.set(xlabel='LSTM-CRF', ylabel='LSTM Base')
+    sns_confusion.set(xlabel='LSTM-CRF', ylabel='LSTM Base')
     #sns_confusion.set(xlabel='BERT-CRF', ylabel='BERT Base')
-    sns_confusion.set(xlabel='DistilBERT-CRF', ylabel='DistilBERT Base')
+    #sns_confusion.set(xlabel='DistilBERT-CRF', ylabel='DistilBERT Base')
     
     # Display the Confusion Matrix
     #plt.show()
-    #plt.savefig("LSTM Confusion Matrix")
+    plt.savefig("LSTM Confusion Matrix")
     #plt.savefig("BERT Confusion Matrix")
-    plt.savefig("DistilBERT Confusion Matrix")
+    #plt.savefig("DistilBERT Confusion Matrix")
     
 
     #confusion_matrix = metrics.confusion_matrix(overall_mod_1, overall_mod_2)
