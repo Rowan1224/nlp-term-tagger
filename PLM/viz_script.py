@@ -75,6 +75,9 @@ def main():
     crf_bert = output_reader("../outputs_for_viz/outputs-bert-crf.csv")
     distilbert_base = output_reader("../outputs_for_viz/distil_outputs.csv")
     crf_distilbert = output_reader("../outputs_for_viz/outputs-distill-crf.csv")
+    
+    lstm_base = output_reader("../outputs_for_viz/outputs-Base-LSTM.csv")
+    lstm_crf = output_reader("../outputs_for_viz/outputs-CRF-LSTM.csv")
 
     #print(bert_base_viz.iloc[0])
     #print()
@@ -88,9 +91,12 @@ def main():
     overall_mod_1 = []
     overall_mod_2 = []
     for i in range(bert_base.shape[0]):
-        pred_1 = bert_base["predictions"].iloc[i]
-        pred_2 = distilbert_base["predictions"].iloc[i]
-        true = bert_base["true"].iloc[i]
+        #pred_1 = bert_base["predictions"].iloc[i]
+        pred_1 = lstm_base["predictions"].iloc[i]
+        #pred_2 = distilbert_base["predictions"].iloc[i]
+        #pred_2 = crf_bert["predictions"].iloc[i]
+        pred_2 = lstm_crf["predictions"].iloc[i]
+        true = lstm_base["true"].iloc[i]
         #sent = bert_base["sent"].iloc[i]
         qual_results, mod_1_res, mod_2_res = span_counter(true, pred_1, pred_2)
         overall_mod_1.extend(mod_1_res)
