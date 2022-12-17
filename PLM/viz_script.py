@@ -4,8 +4,26 @@ import seaborn as sns
 from colorama import Style, Back
 from utils import get_span
 from sklearn import metrics
+from collections import Counter
 
+def bar_plot(dev, test, train):
+    datasets = {"Train": train, "Dev": dev, "Test": test}
+    viz_labels_df = pd.DataFrame.from_dict(datasets, orient="index")
+    viz_labels_df["Dataset"] = viz_labels_df.index
+    print(viz_labels_df)
+    df = pd.melt(viz_labels_df, id_vars="Dataset", var_name="Tags", value_name="Count")
+    print(df)
+    fig = sns.catplot(x='Dataset', y='Count', hue='Tags', data=df, kind='bar')
+    fig.savefig("Distribution of Tags.png")
 
+def dataset_explorer(path):
+
+    with open(path, 'r') as f:
+        sent_labels = f.readlines()
+    
+    sent_labels = [lab.split() for lab in sent_labels]
+    sent_labels = [label.upper() for sent in sent_labels for label in sent]  # test and train had lower cases
+    return Counter(sent_labels)
 
 def print_predictions(tokens, pred_tags, true_tags):
     
@@ -63,14 +81,20 @@ def span_counter(true, mod_1_pred, mod_2_pred):
     return qual_results, mod_1_res, mod_2_res
     #return both_correct, m1_only, m2_only, both_incorrect, len(true_span_idx)
 
-
-
 def output_reader(path):
     df = pd.read_csv(path)
     df['visualizations'] = df.apply(lambda x: print_predictions(x['sent'], x['predictions'], x["true"]), axis=1)
     return df
 
 def main():
+    
+    dev_path = "../Dataset/dev/labels.txt"
+    train_path = "../Dataset/train/labels.txt"
+    test_path = "../Dataset/test/labels.txt"
+    dev = dataset_explorer(dev_path)
+    train = dataset_explorer(train_path)
+    test = dataset_explorer(test_path)
+    bar_plot(dev, test, train)
 
     bert_base = output_reader("../outputs_for_viz/bert_outputs.csv")
     crf_bert = output_reader("../outputs_for_viz/outputs-bert-crf.csv")
