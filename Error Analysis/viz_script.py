@@ -52,7 +52,7 @@ def print_predictions(tokens, pred_tags, true_tags):
         
     return " ".join(output)
 
-def span_counter(true, mod_1_pred, mod_2_pred):
+def span_counter(sent, true, mod_1_pred, mod_2_pred):
 
     both_incorrect = 0
     m1_only = 0
@@ -93,22 +93,22 @@ def output_reader(path):
 
 def main():
     
-    # dev_path = "../Dataset/dev/labels.txt"
-    # train_path = "../Dataset/train/labels.txt"
-    # test_path = "../Dataset/test/labels.txt"
-    # dev = dataset_explorer(dev_path)
-    # train = dataset_explorer(train_path)
-    # test = dataset_explorer(test_path)
-    # bar_plot(dev, test, train)
+    dev_path = "../Dataset/dev/labels.txt"
+    train_path = "../Dataset/train/labels.txt"
+    test_path = "../Dataset/test/labels.txt"
+    dev = dataset_explorer(dev_path)
+    train = dataset_explorer(train_path)
+    test = dataset_explorer(test_path)
+    bar_plot(dev, test, train)
 
     
-    bert_base = output_reader("../outputs_for_viz/outputs-BERT-Base.csv")
-    crf_bert = output_reader("../outputs_for_viz/outputs-BERT-CRF.csv")
-    distilbert_base = output_reader("../outputs_for_viz/outputs-DistilBERT-Base.csv")
-    crf_distilbert = output_reader("../outputs_for_viz/outputs-DistilBERT-CRF.csv")
+    bert_base = output_reader("outputs-BERT-Base.csv")
+    crf_bert = output_reader("outputs-BERT-CRF.csv")
+    distilbert_base = output_reader("outputs-DistilBERT-Base.csv")
+    crf_distilbert = output_reader("/outputs-DistilBERT-CRF.csv")
     
-    lstm_base = output_reader("../outputs_for_viz/outputs-LSTM-Base.csv")
-    lstm_crf = output_reader("../outputs_for_viz/outputs-LSTM-CRF.csv")
+    lstm_base = output_reader("outputs-LSTM-Base.csv")
+    lstm_crf = output_reader("outputs-LSTM-CRF.csv")
 
     #print(bert_base_viz.iloc[0])
     #print()
@@ -122,17 +122,18 @@ def main():
     overall_mod_1 = []
     overall_mod_2 = []
     for i in range(bert_base.shape[0]):
-        pred_1 = bert_base["predictions"].iloc[i]
+        # pred_1 = bert_base["predictions"].iloc[i]
         #pred_1 = distilbert_base["predictions"].iloc[i]
         # pred_1 = lstm_base["predictions"].iloc[i]
         # pred_1 = crf_distilbert["predictions"].iloc[i]
         pred_2 = crf_bert["predictions"].iloc[i]
-        # pred_2 = lstm_crf["predictions"].iloc[i]
-        true = distilbert_base["true"].iloc[i]
+        pred_1 = lstm_crf["predictions"].iloc[i]
+        # true = distilbert_base["true"].iloc[i]
         #true = bert_base["true"].iloc[i]
-        # true = lstm_base["true"].iloc[i]
-        #sent = bert_base["sent"].iloc[i]
-        qual_results, mod_1_res, mod_2_res = span_counter(true, pred_1, pred_2)
+        true = lstm_base["true"].iloc[i]
+
+        sent = bert_base["sent"].iloc[i]
+        qual_results, mod_1_res, mod_2_res = span_counter(sent,true, pred_1, pred_2)
         overall_mod_1.extend(mod_1_res)
         overall_mod_2.extend(mod_2_res)
         both_corr, m1_only, m2_only, both_incorr = qual_results
@@ -143,9 +144,9 @@ def main():
     
     # print(span_sents)
     spans = pd.DataFrame.from_dict(span_sents, orient="index")
-    spans.to_csv("BERT_and_CRF.csv")
+    # spans.to_csv("BERT_and_CRF.csv")
     # spans.to_csv("DistilBERT_and_CRF.csv")
-    # spans.to_csv("LSTM_and_CRF.csv")
+    spans.to_csv("BERT_LSTM_and_CRF.csv")
     print(spans.head())
     # Select Confusion Matrix Size
     results = [[spans["both_corr"].sum(), spans["m1_only"].sum()],
@@ -157,10 +158,10 @@ def main():
     
     # Create Confusion Matrix
     x_axis_labels = ["Model 2 Correct", "Model 2 Incorrect"]
-    y_axis_labels = ["Model 1 Correct", "Model 2 Incorrect"]
+    y_axis_labels = ["Model 1 Correct", "Model 1 Incorrect"]
     
     # Set names to show in boxes
-    classes = ["True Positive","False Negative","False Positive","True Negative"]
+    # classes = ["True Positive","False Negative","False Positive","True Negative"]
     
     # Set values format
     values = ["{0:0.0f}".format(x) for x in results.flatten()]
@@ -169,26 +170,26 @@ def main():
     percentages = ["{0:.1%}".format(x) for x in results.flatten()/np.sum(results)]
     
     # Combine classes, values and percentages to show 
-    combined = [f"{i}\n{j}\n{k}" for i, j, k in zip(classes, values, percentages)]
+    combined = [f"{j}\n{k}" for j, k in zip(values, percentages)]
     combined = np.asarray(combined).reshape(2,2)
-
+    sns.set(font_scale=2)
 
     #sns_confusion = sns.heatmap(results, annot=True, fmt='d', xticklabels=x_axis_labels, yticklabels=y_axis_labels)
     sns_confusion = sns.heatmap(results, annot=combined, xticklabels=x_axis_labels, yticklabels=y_axis_labels, cmap="YlGnBu", fmt="")
     # Set the Title
-    # sns_confusion.set(title='LSTM Confusion Matrix')
-    sns_confusion.set(title='BERT Confusion Matrix')
+    sns_confusion.set(title='LSTM Confusion Matrix')
+    # sns_confusion.set(title='BERT Confusion Matrix')
     #sns_confusion.set(title='DistilBERT Confusion Matrix')
     
     # Set the Labels
-    # sns_confusion.set(xlabel='LSTM-CRF', ylabel='LSTM Base')
-    sns_confusion.set(xlabel='BERT-CRF', ylabel='BERT Base')
+    sns_confusion.set(xlabel='BERT-CRF', ylabel='LSTM-CRF')
+    # sns_confusion.set(xlabel='BERT-CRF', ylabel='BERT Base')
     #sns_confusion.set(xlabel='DistilBERT-CRF', ylabel='DistilBERT Base')
     
     # Display the Confusion Matrix
     #plt.show()
-    # plt.savefig("LSTM Confusion Matrix")
-    plt.savefig("BERT Confusion Matrix")
+    plt.savefig("LSTM-BERT Confusion Matrix")
+    # plt.savefig("BERT Confusion Matrix")
     #plt.savefig("DistilBERT Confusion Matrix")
     
 

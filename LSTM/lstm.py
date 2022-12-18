@@ -94,7 +94,7 @@ def main():
 
     batch_size = args.batch
     train_dataloader = DataLoader(dataset_train, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(dataset_test, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(dataset_test, batch_size=batch_size, shuffle=False)
     valid_dataloader = DataLoader(dataset_dev, batch_size=batch_size, shuffle=True)
 
 
