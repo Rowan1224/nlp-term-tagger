@@ -1,4 +1,7 @@
-#!/bin/sh
+# !/bin/sh
+
+source env/bin/activate
+
 
 #echo Running $1 with $2 configuration
 

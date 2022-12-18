@@ -6,6 +6,8 @@
 
 # Set Up Environment
 
+Execute ``setup.sh`` file to create a virtual environment and install the required packages
+
 # Run Exmperiment
 
 Execute ``run.sh`` file to train and evaluate models:
@@ -17,5 +19,7 @@ Example:
 - LSTM: ``run.sh lstm base``
 
 - BERT+CRF: ``run.sh bert crf``
+
+- DistilBERT+CRF: ``run.sh distilbert crf``
 
 - Majority Baseline: ``run.sh``

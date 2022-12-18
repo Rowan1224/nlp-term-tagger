@@ -2,9 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from colorama import Style, Back
-from utils import get_span
+from PLM.utils import get_span
 import numpy as np
-from sklearn import metrics
 from collections import Counter
 
 #TODO: MULTICLASS MATRIX https://aihints.com/seaborn-confusion-matrix-plot-confusion-matrix-in-python/
