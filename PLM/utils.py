@@ -25,7 +25,7 @@ def compute_metrics_test(preds,labels, is_crf=False):
     acc = metric_acc.compute(predictions=predicts, references=tags)
     f1 = metric_f1.compute(predictions=predicts, references=tags, average='macro')
     
-    return {'accuracy': acc['accuracy'], 'f1':f1['f1']}, tags.tolist(), predicts.tolist()
+    return {'accuracy': acc['accuracy'], 'f1':f1['f1']}, predicts.tolist(), tags.tolist()
 
 def get_tag_mappings():
     

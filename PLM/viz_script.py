@@ -82,7 +82,7 @@ def span_counter(true, mod_1_pred, mod_2_pred):
             mod_1_res.append(0)
             mod_2_res.append(0)
             #raise Exception("weird comparison")
-    qual_results = [both_correct, m1_only, m2_only, both_incorrect]
+    qual_results = (both_correct, m1_only, m2_only, both_incorrect)
     return qual_results, mod_1_res, mod_2_res
     #return both_correct, m1_only, m2_only, both_incorrect, len(true_span_idx)
 
@@ -93,21 +93,22 @@ def output_reader(path):
 
 def main():
     
-    dev_path = "../Dataset/dev/labels.txt"
-    train_path = "../Dataset/train/labels.txt"
-    test_path = "../Dataset/test/labels.txt"
-    dev = dataset_explorer(dev_path)
-    train = dataset_explorer(train_path)
-    test = dataset_explorer(test_path)
-    bar_plot(dev, test, train)
+    # dev_path = "../Dataset/dev/labels.txt"
+    # train_path = "../Dataset/train/labels.txt"
+    # test_path = "../Dataset/test/labels.txt"
+    # dev = dataset_explorer(dev_path)
+    # train = dataset_explorer(train_path)
+    # test = dataset_explorer(test_path)
+    # bar_plot(dev, test, train)
 
-    bert_base = output_reader("../outputs_for_viz/bert_outputs.csv")
-    crf_bert = output_reader("../outputs_for_viz/outputs-bert-crf.csv")
-    distilbert_base = output_reader("../outputs_for_viz/distil_outputs.csv")
-    crf_distilbert = output_reader("../outputs_for_viz/outputs-distill-crf.csv")
     
-    lstm_base = output_reader("../outputs_for_viz/outputs-Base-LSTM.csv")
-    lstm_crf = output_reader("../outputs_for_viz/outputs-CRF-LSTM.csv")
+    bert_base = output_reader("../outputs_for_viz/outputs-BERT-Base.csv")
+    crf_bert = output_reader("../outputs_for_viz/outputs-BERT-CRF.csv")
+    distilbert_base = output_reader("../outputs_for_viz/outputs-DistilBERT-Base.csv")
+    crf_distilbert = output_reader("../outputs_for_viz/outputs-DistilBERT-CRF.csv")
+    
+    lstm_base = output_reader("../outputs_for_viz/outputs-LSTM-Base.csv")
+    lstm_crf = output_reader("../outputs_for_viz/outputs-LSTM-CRF.csv")
 
     #print(bert_base_viz.iloc[0])
     #print()
@@ -121,15 +122,15 @@ def main():
     overall_mod_1 = []
     overall_mod_2 = []
     for i in range(bert_base.shape[0]):
-        #pred_1 = bert_base["predictions"].iloc[i]
+        pred_1 = bert_base["predictions"].iloc[i]
         #pred_1 = distilbert_base["predictions"].iloc[i]
-        pred_1 = lstm_base["predictions"].iloc[i]
-        #pred_2 = crf_distilbert["predictions"].iloc[i]
-        #pred_2 = crf_bert["predictions"].iloc[i]
-        pred_2 = lstm_crf["predictions"].iloc[i]
-        #true = distilbert_base["true"].iloc[i]
+        # pred_1 = lstm_base["predictions"].iloc[i]
+        # pred_1 = crf_distilbert["predictions"].iloc[i]
+        pred_2 = crf_bert["predictions"].iloc[i]
+        # pred_2 = lstm_crf["predictions"].iloc[i]
+        true = distilbert_base["true"].iloc[i]
         #true = bert_base["true"].iloc[i]
-        true = lstm_base["true"].iloc[i]
+        # true = lstm_base["true"].iloc[i]
         #sent = bert_base["sent"].iloc[i]
         qual_results, mod_1_res, mod_2_res = span_counter(true, pred_1, pred_2)
         overall_mod_1.extend(mod_1_res)
@@ -140,16 +141,18 @@ def main():
         span_sents.setdefault(f"sent_{i}", {"both_corr": both_corr, "m1_only": m1_only,
                                             "m2_only": m2_only, "both_incorr": both_incorr})
     
-    
+    # print(span_sents)
     spans = pd.DataFrame.from_dict(span_sents, orient="index")
-    #spans.to_csv("BERT_and_CRF.csv")
-    #spans.to_csv("DistilBERT_and_CRF.csv")
-    #spans.to_csv("LSTM_and_CRF.csv")
+    spans.to_csv("BERT_and_CRF.csv")
+    # spans.to_csv("DistilBERT_and_CRF.csv")
+    # spans.to_csv("LSTM_and_CRF.csv")
     print(spans.head())
     # Select Confusion Matrix Size
     results = [[spans["both_corr"].sum(), spans["m1_only"].sum()],
                [spans["m2_only"].sum(), spans["both_incorr"].sum()]]
     results = np.array(results)
+
+    # print(results)
     plt.figure(figsize=(10, 8))
     
     # Create Confusion Matrix
@@ -173,19 +176,19 @@ def main():
     #sns_confusion = sns.heatmap(results, annot=True, fmt='d', xticklabels=x_axis_labels, yticklabels=y_axis_labels)
     sns_confusion = sns.heatmap(results, annot=combined, xticklabels=x_axis_labels, yticklabels=y_axis_labels, cmap="YlGnBu", fmt="")
     # Set the Title
-    sns_confusion.set(title='LSTM Confusion Matrix')
-    #sns_confusion.set(title='BERT Confusion Matrix')
+    # sns_confusion.set(title='LSTM Confusion Matrix')
+    sns_confusion.set(title='BERT Confusion Matrix')
     #sns_confusion.set(title='DistilBERT Confusion Matrix')
     
     # Set the Labels
-    sns_confusion.set(xlabel='LSTM-CRF', ylabel='LSTM Base')
-    #sns_confusion.set(xlabel='BERT-CRF', ylabel='BERT Base')
+    # sns_confusion.set(xlabel='LSTM-CRF', ylabel='LSTM Base')
+    sns_confusion.set(xlabel='BERT-CRF', ylabel='BERT Base')
     #sns_confusion.set(xlabel='DistilBERT-CRF', ylabel='DistilBERT Base')
     
     # Display the Confusion Matrix
     #plt.show()
-    plt.savefig("LSTM Confusion Matrix")
-    #plt.savefig("BERT Confusion Matrix")
+    # plt.savefig("LSTM Confusion Matrix")
+    plt.savefig("BERT Confusion Matrix")
     #plt.savefig("DistilBERT Confusion Matrix")
     
 
