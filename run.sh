@@ -3,7 +3,7 @@
 source env/bin/activate
 
 
-#echo Running $1 with $2 configuration
+#default arguments are given in comments. To run the codes in a different setting, please uncomment the arguments
 
 if [ "$1" = "lstm" ]; then
     cd ./LSTM

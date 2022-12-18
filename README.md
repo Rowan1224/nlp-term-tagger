@@ -1,6 +1,5 @@
 # Resources
 
-- [google doc with links](https://docs.google.com/document/d/1xYfsBLmHbwjzAoeOfT5YLmYt7ywi4LlZl88IX51toGA/edit)
 - [Download word vectors from GloVe](https://nlp.stanford.edu/projects/glove/)
 
 
@@ -16,7 +15,7 @@ Command: ``run.sh [bert/lstm/distilbert] [crf/base]``
 
 Example:
 
-- LSTM: ``run.sh lstm base``
+- LSTM: ``run.sh lstm base`` # Please download GloVe word embedding vectors and place it in the LSTM folder
 
 - BERT+CRF: ``run.sh bert crf``
 
