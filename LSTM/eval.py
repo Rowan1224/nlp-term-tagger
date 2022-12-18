@@ -58,6 +58,8 @@ def print_predictions(tokens, pred_tags, true_tags, VOCAB, MAX_SEQ_LENGTH=96):
     
     true = []
     
+    sents = []
+
     for tokens,true_tags,pred_tags in zip(batch_tokens,batch_pred_tags,batch_true_tags):
         
         true_tags = true_tags[:len(tokens)]
@@ -81,8 +83,9 @@ def print_predictions(tokens, pred_tags, true_tags, VOCAB, MAX_SEQ_LENGTH=96):
         outputs.append(" ".join(output))
         preds.append(pred_tags)
         true.append(true_tags)
+        sents.append(" ".join(tokens))
     
-    return outputs, preds, true
+    return outputs, preds, true, sents
 
 
 def eval_crf(model, outputs, labels, batch=8, max_sequence_length=96, device = 'cpu'):

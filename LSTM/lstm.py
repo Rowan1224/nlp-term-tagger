@@ -1,4 +1,3 @@
-
 from torch.utils.data import DataLoader
 import torch
 import numpy as np
@@ -113,7 +112,7 @@ def main():
     #define hidden size
     hidden_size = args.hidden_size
     #set if LSTM should be bidirectional 
-    bidirectional = False
+    bidirectional = True
     # output size i.e class size 
     output_size = 3
     # activation function
@@ -143,15 +142,21 @@ def main():
     # train model
     model_tr, loss_all_epochs, accuracy = training_lstm(rnn, train_dataloader, valid_dataloader, num_epochs, learning_rate, device, use_crf=use_crf)
 
+    # model_dir = './output/model-CRF.pt' if use_crf else './output/model-Base.pt'
+    # state_dict = torch.load(model_dir)
+    # rnn.load_state_dict(state_dict)
+    # acc, preds = eval(rnn,test_dataloader,VOCAB, MAX_SEQ_LENGTH, device, True, use_crf)
 
     acc, preds = eval(model_tr,test_dataloader,VOCAB, MAX_SEQ_LENGTH, device, True, use_crf)
     outputs=[]
+    sents = []
     pred_labels=[]
     true_labels = []
     true_spans = []
     pred_spans = []
-    for o,p,t in preds:
+    for o,p,t,s in preds:
         outputs.extend(o)
+        sents.extend(s)
         
         for i in range(len(p)):
             pred_labels.extend(p[i])
@@ -166,8 +171,10 @@ def main():
     print("#"*50)
 
     df = pd.DataFrame()
+    df['sents'] = sents
     df['true'] = true_spans
     df['preds'] = pred_spans
+
 
     print("#"*50)
     print('Span Level Evaluation')
