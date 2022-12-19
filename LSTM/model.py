@@ -4,6 +4,26 @@ import torch
 from allennlp.modules import ConditionalRandomField
 from allennlp.modules.conditional_random_field import allowed_transitions
 
+# The class takes in the following parameters:
+# 
+# - vocab_size: the size of the vocabulary
+# - emb_dim: the dimension of the word embeddings
+# - word_embeddings: the word embeddings
+# - max_sequence_length: the maximum length of the sequence
+# - num_layers: the number of layers in the LSTM
+# - hidden_size: the hidden size of the LSTM
+# - bidirectional: whether the LSTM is bidirectional
+# - output_size: the number of classes
+# - act_fn: the activation function
+# - device: the device to use
+# 
+# The class has the following attributes:
+# 
+# - input_layer: the embedding layer
+# - lstm: the LSTM layer
+# - direction: the direction of the LSTM
+# - layers: the number of layers in the LSTM
+# - max_sequence_length:
 class RNN_CRF(nn.Module):
     def __init__(self, vocab_size, emb_dim, word_embeddings,
                  max_sequence_length, num_layers, hidden_size, bidirectional, output_size, act_fn, device ='cpu'):

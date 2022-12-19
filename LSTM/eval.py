@@ -26,6 +26,14 @@ def index_to_tag(labels, MAX_SEQ_LENGTH=96):
     return batchTags
 
 def index_to_token(token_ids, VOCAB):
+    """
+    * For each item in the batch of token indices, convert the token indices to strings using the
+    vocabulary
+    
+    :param token_ids: a batch of token indices
+    :param VOCAB: the vocabulary of the dataset
+    :return: A list of lists of strings.
+    """
     
     """convert a batch of token indices to list of strings"""
     
@@ -41,6 +49,16 @@ def index_to_token(token_ids, VOCAB):
 
 
 def print_predictions(tokens, pred_tags, true_tags, VOCAB, MAX_SEQ_LENGTH=96):
+    """
+    It takes in the model, the output of the model, the labels, the batch size, the max sequence length,
+    and the device
+    
+    :param tokens: the tokenized text
+    :param pred_tags: the predicted tags
+    :param true_tags: the true tags for the batch
+    :param VOCAB: The vocabulary of the dataset
+    :param MAX_SEQ_LENGTH: The maximum length of a sentence, defaults to 96 (optional)
+    """
     
     
     batch_tokens = index_to_token(tokens, VOCAB)
@@ -123,6 +141,25 @@ def eval_crf(model, outputs, labels, batch=8, max_sequence_length=96, device = '
 
 
 def eval(model, eval_dataloader, VOCAB=None, MAX_SEQ_LENGTH=96, device='cpu', return_predictions = False, CRF=False):
+    """
+    The function takes in a model, a dataloader, a vocabulary, a maximum sequence length, and a device.
+    It then sets the model to evaluation mode, and iterates over the dataloader. For each batch, it gets
+    the sentences and labels, and gets the number of classes. It then finds the padded tokens, reshapes
+    it to make it the same shape as the labels, counts the non-pad tokens, and counts the padded tokens.
+    If the model is a CRF model, it gets the output, and then calls the eval_crf function to get the
+    labels and label_predicted. If the model is not a CRF model, it gets the predicted labels, and then
+    reshapes the labels to make it the same shape as the model output. It then computes the accuracy,
+    and returns the accuracy.
+    
+    :param model: the model to be evaluated
+    :param eval_dataloader: the dataloader for the evaluation dataset
+    :param VOCAB: the vocabulary object
+    :param MAX_SEQ_LENGTH: the maximum length of the input sequence, defaults to 96 (optional)
+    :param device: the device on which the model is trained, defaults to cpu (optional)
+    :param return_predictions: if True, the function will return the predictions as well as the
+    accuracy, defaults to False (optional)
+    :param CRF: whether to use CRF or not, defaults to False (optional)
+    """
     
     model = copy.deepcopy(model)
     # Set the model in 'evaluation' mode (this disables some layers (batch norm, dropout...) which are not needed when testing)

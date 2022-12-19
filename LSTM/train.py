@@ -1,6 +1,16 @@
 
 
 def train_step(model, dataloader, optimizer, validation=False):
+    """
+    For each batch in the dataloader, we get the input and label, zero the gradients, compute the output
+    and loss, backpropagate the loss, and update the weights
+    
+    :param model: the model we are training
+    :param dataloader: the dataloader for the dataset we want to train on
+    :param optimizer: the optimizer used to update the weights of the model
+    :param validation: whether we are training or validating, defaults to False (optional)
+    :return: The total loss over the entire epoch
+    """
 
     
     total_loss = 0

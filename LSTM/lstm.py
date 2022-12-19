@@ -24,6 +24,20 @@ torch.cuda.manual_seed_all(SEED)
 
 
 def training_lstm(model, train_dataloader, valid_dataloader, num_epochs, learning_rate, device='cpu', verbose=True, use_crf=False):
+    """
+    It trains the model for a given number of epochs, and returns the trained model and the training
+    loss over epochs
+    
+    :param model: the model to train
+    :param train_dataloader: the training dataloader
+    :param valid_dataloader: the validation dataloader
+    :param num_epochs: number of epochs to train the model
+    :param learning_rate: the learning rate for the Adam optimizer
+    :param device: the device to use for training (CPU or GPU), defaults to cpu (optional)
+    :param verbose: whether to print the training loss after each epoch, defaults to True (optional)
+    :param use_crf: whether to use CRF or not, defaults to False (optional)
+    :return: The model, the loss and the accuracy
+    """
 
     # Make a copy of the model (avoid changing the model outside this function)
     model_tr = copy.deepcopy(model)

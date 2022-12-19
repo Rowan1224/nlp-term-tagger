@@ -6,6 +6,14 @@ import string
 
 
 def get_files(path, pattern='*.final'):
+    """
+    It takes a path and a pattern as input, and returns a list of files that match the pattern
+    
+    :param path: the path to the directory containing the files
+    :param pattern: the pattern of the files to be read. Default is '*.final', defaults to *.final
+    (optional)
+    :return: A list of files that match the pattern
+    """
     
     files = []
     for root, dirnames, filenames in os.walk(path):
@@ -22,6 +30,12 @@ def get_files(path, pattern='*.final'):
 
 
 def read_data(file):
+    """
+    It reads in a file, and returns a list of lists, where each list is a sentence
+    
+    :param file: the file to be read
+    :return: A list of lists of lists.
+    """
     
     try:
         with open(file,'r') as file:
@@ -49,6 +63,13 @@ def read_data(file):
                 
 
 def prepare_data(files):
+    """
+    - Reads the data from the files
+    - Creates a list of sentences and a list of labels
+    - Returns the lists
+    
+    :param files: list of files to read
+    """
     
     mx_length = 0
     data = []

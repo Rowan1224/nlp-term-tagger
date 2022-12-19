@@ -8,6 +8,8 @@ from transformers import AutoModel
 import copy
 
 
+# The CRF class is a wrapper around the pretrained model. It takes in the input_ids, attention_mask,
+# and labels and returns the loss and the predicted labels
 class CRF(nn.Module):
     def __init__(self, model_name, id_to_tag, output_size, device ='cpu', dropout_rate = 0.1):
         super(CRF, self).__init__()

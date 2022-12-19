@@ -3,6 +3,13 @@ import torch
 import numpy as np
 
 @dataclass
+# 1. We take in a sentence and its tags
+# 2. We tokenize the sentence using the tokenizer
+# 3. We create a list of tags for each word in the sentence
+# 4. We create a list of tags for each token in the sentence
+# 5. We create a list of tags for each subtoken in the sentence
+# 6. We return a dictionary of the tokenized sentence, the list of tags for each word, and the list of
+# tags for each subtoken
 class PreDataCollator:
     
     def __init__(self, tokenizer, max_len, tags_to_ids):

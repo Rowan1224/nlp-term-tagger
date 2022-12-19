@@ -9,6 +9,14 @@ metric_f1 = evaluate.load("f1")
 
 
 def compute_metrics_test(preds,labels, is_crf=False):
+    """
+    It takes in the predictions and labels, and returns the accuracy and f1 score
+    
+    :param preds: the predictions of the model
+    :param labels: the actual labels
+    :param is_crf: whether the model is a CRF or not. If it is, then the predictions are the tag
+    indices, and we need to convert them to the actual tags, defaults to False (optional)
+    """
     
 
     tr_active_acc = labels != -100
@@ -27,6 +35,11 @@ def compute_metrics_test(preds,labels, is_crf=False):
     return {'accuracy': acc['accuracy'], 'f1':f1['f1']}, tags.tolist(), predicts.tolist()
 
 def get_tag_mappings():
+    """
+    It creates a dictionary that maps each tag to a unique integer, and another dictionary that maps
+    each integer to a unique tag
+    :return: A dictionary of tags to ids and a dictionary of ids to tags.
+    """
     
     unique_tags = ['O','I','B']
     tags_to_ids = {k: v for v, k in enumerate(unique_tags)}
@@ -38,6 +51,15 @@ def get_tag_mappings():
 
     
 def match(t,p):
+    """
+    It takes in two strings, `t` and `p`, and returns the number of spans in `t`, the number of spans in
+    `p`, and the number of spans that are in both `t` and `p`
+    
+    :param t: the true spans
+    :param p: predicted spans
+    :return: The number of true spans, the number of predicted spans, and the number of spans that are
+    in both the true and predicted sets.
+    """
     
     trueSpans = set(get_span(t))
     predSpans = set(get_span(p))
@@ -48,6 +70,13 @@ def match(t,p):
 
 
 def span_evaluation(true, pred):
+    """
+    For each true and predicted span, count the number of true spans, predicted spans, and correct
+    spans. Then, calculate recall, precision, and F1.
+    
+    :param true: a list of lists of tuples, where each tuple is a span of text
+    :param pred: the predicted spans
+    """
 
     totalGold = 0
     totalPred = 0
@@ -70,6 +99,13 @@ def span_evaluation(true, pred):
 
 
 def print_predictions(tokens, pred_tags, true_tags):
+    """
+    It takes in a sentence, the predicted tags and the true tags and prints them out in a nice format
+    
+    :param tokens: the list of tokens
+    :param pred_tags: the predicted tags
+    :param true_tags: the true tags for the sentence
+    """
     
     tokens = tokens.split()
 
@@ -94,6 +130,12 @@ def print_predictions(tokens, pred_tags, true_tags):
 
 
 def get_span(label):
+    """
+    It takes a string of labels and returns a list of tuples, where each tuple is a span of the labels
+    
+    :param label: the label of the sentence
+    :return: A list of tuples, each tuple is a span of the label.
+    """
 
     pattern = "B( I)+|B|B O( I)"
     matches = re.finditer(pattern, label)
@@ -104,6 +146,11 @@ def get_span(label):
 
 
 def compute_metrics_crf(pred):
+    """
+    > We're going to compute the accuracy and f1 score of the predictions made by the model
+    
+    :param pred: the output of the model
+    """
     
 
     pred_logits = pred.predictions
@@ -122,6 +169,11 @@ def compute_metrics_crf(pred):
 
 
 def compute_metrics(pred):
+    """
+    It takes the predictions from the model and computes the accuracy and f1 score
+    
+    :param pred: the prediction object returned by the model
+    """
     
     
     pred_logits = pred.predictions
